@@ -764,10 +764,10 @@ This project is developed for the National Fisheries Research and Development In
 ---
 
 **Version**: 1.1  
-**Last Updated**: December 2024  
+**Last Updated**: November 28, 2025
 **Maintained by**: FishCoRe Project Management Office
 
-### Recent Updates (December 2024)
+### Recent Updates (November 28, 2025)
 
 - **Responsive Design Improvements**:
   - FMA Profile table: Maximized width on desktop, horizontal scrolling on mobile
@@ -776,4 +776,5 @@ This project is developed for the National Fisheries Research and Development In
   - Activities timeline: Mobile-optimized cards with vertical stacking and full-width buttons
   - References: Mobile-optimized cards with improved spacing and touch interactions
   - All filters: Responsive layouts that stack vertically on mobile devices
+
 

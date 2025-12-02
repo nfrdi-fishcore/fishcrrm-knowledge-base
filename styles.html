@@ -189,6 +189,39 @@
     box-shadow: none;
   }
 
+  /* Mobile adjustments for hero section to prevent button overlap */
+  @media (max-width: 767.98px) {
+    .hero-section {
+      padding-bottom: 6rem;
+      min-height: 80vh;
+    }
+
+    .hero-content {
+      padding-bottom: 2rem;
+    }
+
+    .hero-learn-more-btn {
+      margin-bottom: 1.5rem;
+      z-index: 3;
+      position: relative;
+    }
+  }
+
+  /* Reduce negative margin on mobile to prevent scorecards from overlapping Learn More button */
+  @media (max-width: 767.98px) {
+    /* Target the main content container after hero section */
+    .home-main-content {
+      margin-top: -40px !important;
+    }
+  }
+
+  /* Tablet adjustments - keep similar spacing as desktop but slightly adjusted */
+  @media (min-width: 768px) and (max-width: 991.98px) {
+    .home-main-content {
+      margin-top: -80px !important;
+    }
+  }
+
   .hero-overlay {
     background: linear-gradient(135deg, rgba(26, 16, 60, 0.85) 0%, rgba(71, 52, 114, 0.7) 100%);
   }

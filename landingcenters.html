@@ -1,0 +1,140 @@
+<!-- landingcenters.html -->
+<div class="py-3 animate-fade-up">
+  <div class="d-flex align-items-center mb-4">
+    <div class="text-white rounded-circle p-3 me-3 shadow-sm" style="background: #151269;">
+      <i class="bi bi-geo-alt-fill fs-3"></i>
+    </div>
+    <div>
+      <h2 class="fw-bold mb-0" style="color: #151269;">Landing Centers</h2>
+      <p class="text-muted mb-0">Interactive map showing landing centers locations across FMA 6 and FMA 9</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Filters Sidebar -->
+    <div class="col-lg-3 col-md-4">
+      <div class="glass-panel p-4 shadow-sm sticky-top landing-centers-sidebar" style="top: 100px;">
+        <h5 class="fw-bold mb-4" style="color: #151269;">
+          <i class="bi bi-funnel me-2"></i>Filters
+        </h5>
+        
+        <div id="filters-container">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small" style="color: #151269;">
+              <i class="bi bi-diagram-3 me-1"></i>FMA
+            </label>
+            <select id="filter-fma" class="form-select form-select-sm shadow-sm">
+              <option value="">All FMAs</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small" style="color: #151269;">
+              <i class="bi bi-geo-alt-fill me-1"></i>Region
+            </label>
+            <select id="filter-region" class="form-select form-select-sm shadow-sm">
+              <option value="">All Regions</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small" style="color: #151269;">
+              <i class="bi bi-building me-1"></i>Province
+            </label>
+            <select id="filter-province" class="form-select form-select-sm shadow-sm" disabled>
+              <option value="">All Provinces (select region first)</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small" style="color: #151269;">
+              <i class="bi bi-water me-1"></i>Fishing Ground
+            </label>
+            <select id="filter-fishing-ground" class="form-select form-select-sm shadow-sm">
+              <option value="">All Fishing Grounds</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small" style="color: #151269;">
+              <i class="bi bi-geo-alt me-1"></i>City/Municipality
+            </label>
+            <input type="text" id="filter-city-mun" class="form-control form-control-sm shadow-sm" placeholder="Search city/municipality...">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small" style="color: #151269;">
+              <i class="bi bi-building me-1"></i>Landing Center
+            </label>
+            <input type="text" id="filter-landing-center" class="form-control form-control-sm shadow-sm" placeholder="Search landing center...">
+          </div>
+
+          <button id="reset-filters" class="btn btn-sm btn-outline-secondary w-100 mt-3">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
+          </button>
+
+          <div id="filter-summary" class="mt-4 p-3 rounded" style="background: rgba(21, 18, 105, 0.05);">
+            <small class="text-muted d-block mb-1">
+              <i class="bi bi-info-circle me-1"></i>
+              <strong id="filtered-count">0</strong> of <strong id="total-count">0</strong> landing centers
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="col-lg-9 col-md-8">
+      <div class="glass-panel p-4 shadow-sm">
+        <h4 class="fw-bold mb-4" style="color: #151269;">
+          <i class="bi bi-map me-2"></i>Landing Centers Map
+        </h4>
+        
+        <!-- Loading State -->
+        <div id="map-loading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="mt-2 text-muted small">Loading landing centers data...</p>
+        </div>
+        
+        <!-- Error State -->
+        <div id="map-error" class="alert alert-danger d-none" role="alert">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          <span id="map-error-message"></span>
+        </div>
+        
+        <!-- Map Container -->
+        <div id="landing-centers-map" class="rounded-3 overflow-hidden shadow-sm" style="height: 800px; display: none;"></div>
+        
+        <!-- Info Panel -->
+        <div id="map-info" class="mt-3 d-none">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <small class="text-muted">
+              <i class="bi bi-info-circle me-1"></i>
+              <span id="marker-count">0</span> landing center(s) displayed
+            </small>
+            <small class="text-muted">
+              <i class="bi bi-check-circle me-1"></i>
+              Only locations with valid coordinates are shown
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Map initialization variables -->
+<script>
+  window.landingCentersMap = null;
+  window.mapMarkers = [];
+  
+  // Clean up map when navigating away
+  window.addEventListener('beforeunload', () => {
+    if (window.landingCentersMap) {
+      window.landingCentersMap.remove();
+      window.landingCentersMap = null;
+      window.mapMarkers = [];
+    }
+  });
+</script>
+

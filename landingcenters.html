@@ -1,0 +1,119 @@
+<!-- landingcenters.html -->
+<div class="landing-centers-fullscreen">
+  <!-- Full Screen Map Container -->
+  <div class="landing-centers-map-wrapper">
+    <!-- Floating Filter Sidebar - Inside Map Container -->
+    <div id="landing-centers-filter-sidebar" class="landing-centers-filter-sidebar show">
+      <div class="glass-panel shadow-lg landing-centers-sidebar">
+        <div class="filter-sidebar-header">
+          <div class="d-flex align-items-center">
+            <div class="filter-header-icon">
+              <i class="bi bi-funnel-fill"></i>
+            </div>
+            <div>
+              <h5 class="filter-header-title mb-0">Filters</h5>
+              <small class="filter-header-subtitle">Refine your search</small>
+            </div>
+          </div>
+          <button id="close-filter-sidebar" class="filter-close-btn" type="button" aria-label="Close filters">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        
+        <div id="filters-container">
+          <div class="filter-item">
+            <select id="filter-fma" class="form-select form-select-sm filter-input">
+              <option value="">All FMAs</option>
+            </select>
+          </div>
+
+          <div class="filter-item">
+            <select id="filter-region" class="form-select form-select-sm filter-input">
+              <option value="">All Regions</option>
+            </select>
+          </div>
+
+          <div class="filter-item">
+            <select id="filter-province" class="form-select form-select-sm filter-input" disabled>
+              <option value="">All Provinces (select region first)</option>
+            </select>
+          </div>
+
+          <div class="filter-item">
+            <select id="filter-fishing-ground" class="form-select form-select-sm filter-input">
+              <option value="">All Fishing Grounds</option>
+            </select>
+          </div>
+
+          <div class="filter-item">
+            <input type="text" id="filter-city-mun" class="form-control form-control-sm filter-input" placeholder="Search city/municipality...">
+          </div>
+
+          <div class="filter-item">
+            <input type="text" id="filter-landing-center" class="form-control form-control-sm filter-input" placeholder="Search landing center...">
+          </div>
+
+          <div class="filter-actions">
+            <button id="reset-filters" class="btn btn-sm w-100 filter-reset-btn" type="button">
+              <i class="bi bi-arrow-counterclockwise me-2"></i>Reset All Filters
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toggle Filter Button - Inside Map Container -->
+    <button id="toggle-filter-sidebar" class="landing-centers-filter-toggle btn shadow-lg" type="button" aria-label="Show filters" style="display: none;">
+      <i class="bi bi-funnel-fill"></i>
+      <span class="toggle-badge">Filters</span>
+    </button>
+    <!-- Loading State -->
+    <div id="map-loading" class="landing-centers-loading text-center">
+      <div class="spinner-border text-primary" role="status" style="width: 3.5rem; height: 3.5rem; border-width: 0.3em;"></div>
+      <p class="mt-3 text-muted">Loading landing centers data...</p>
+    </div>
+    
+    <!-- Error State -->
+    <div id="map-error" class="alert alert-danger d-none landing-centers-error" role="alert">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      <span id="map-error-message"></span>
+    </div>
+    
+    <!-- Map Container -->
+    <div id="landing-centers-map" class="landing-centers-map" style="display: none;"></div>
+    
+    <!-- Info Panel (Floating) -->
+    <div id="map-info" class="landing-centers-info-panel d-none">
+      <div class="glass-panel p-3 shadow-lg">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <small class="d-flex align-items-center" style="color: #151269;">
+              <i class="bi bi-geo-alt-fill me-2" style="color: #151269;"></i>
+              <strong id="marker-count">0</strong>
+              <span class="ms-1">landing center(s) displayed</span>
+            </small>
+          </div>
+          <small class="d-flex align-items-center text-muted">
+            <i class="bi bi-check-circle me-1"></i>
+            Only locations with valid coordinates are shown
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Map initialization variables -->
+<script>
+  window.landingCentersMap = null;
+  window.mapMarkers = [];
+  
+  // Clean up map when navigating away
+  window.addEventListener('beforeunload', () => {
+    if (window.landingCentersMap) {
+      window.landingCentersMap.remove();
+      window.landingCentersMap = null;
+      window.mapMarkers = [];
+    }
+  });
+</script>

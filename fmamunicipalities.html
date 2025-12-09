@@ -1,0 +1,86 @@
+<!-- fmamunicipalities.html -->
+<div class="py-3 animate-fade-up">
+  <div class="d-flex align-items-center mb-4">
+    <div class="text-white rounded-circle p-3 me-3 shadow-sm" style="background: #151269;">
+      <i class="bi bi-diagram-3 fs-3"></i>
+    </div>
+    <div>
+      <h2 class="fw-bold mb-0" style="color: #151269;">FMA Municipalities</h2>
+      <p class="text-muted mb-0">Comprehensive list of municipalities by FMA with regional and provincial breakdown</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Table Section -->
+    <div class="col-lg-8">
+      <div class="glass-panel p-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+          <h4 class="fw-bold mb-0" style="color: #151269;">
+            <i class="bi bi-table me-2"></i>FMA Municipalities List
+          </h4>
+          <div class="d-flex align-items-center gap-2">
+            <label class="form-label mb-0 fw-semibold small d-none d-sm-inline" style="color: #151269;">Items per page:</label>
+            <label class="form-label mb-0 fw-semibold small d-inline d-sm-none" style="color: #151269;">Per page:</label>
+            <select class="form-select form-select-sm" id="fma-items-per-page" style="width: auto; min-width: 80px;">
+              <option value="10">10</option>
+              <option value="20" selected>20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+        </div>
+        <!-- Filters will be injected here by JS -->
+        <div id="filter-container-placeholder"></div>
+
+        <div class="table-responsive municipalities-table-wrapper rounded-3 border shadow-sm">
+          <table class="table table-hover mb-0 align-middle municipalities-table" id="fma-municipalities-table">
+            <thead style="background: #f8f9fa;">
+              <tr>
+                <th class="ps-4 fw-semibold" style="color: #151269 !important;">FMA</th>
+                <th class="fw-semibold" style="color: #151269 !important;">Region</th>
+                <th class="fw-semibold" style="color: #151269 !important;">Province</th>
+                <th class="pe-4 fw-semibold" style="color: #151269 !important;">City/Municipality</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="4" class="text-center py-5">
+                  <div class="spinner-border text-primary" role="status"></div>
+                  <p class="mt-2 text-muted small">Loading FMA municipalities...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Pagination Controls -->
+        <div id="fma-pagination" class="d-none mt-4">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <span class="text-muted small" id="fma-pagination-info">Showing 0-0 of 0</span>
+            <nav>
+              <ul class="pagination pagination-sm mb-0" id="fma-pagination-controls">
+                <!-- Pagination buttons will be injected here -->
+              </ul>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Summary Section -->
+    <div class="col-lg-4">
+      <div class="glass-panel p-4 shadow-sm" style="position: sticky; top: 20px;">
+        <h4 class="fw-bold mb-4" style="color: #151269;">
+          <i class="bi bi-bar-chart me-2"></i>Summary
+        </h4>
+        <div id="fma-municipalities-summary">
+          <div class="text-center py-4">
+            <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+            <p class="mt-2 text-muted small">Loading summary...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

@@ -5,21 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>FishCRRM 1.1 Knowledge Base</title>
   
-  <!-- Security Headers -->
-  <meta http-equiv="X-Content-Type-Options" content="nosniff">
-  <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
-  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-  
-  <!-- Content Security Policy -->
-  <meta http-equiv="Content-Security-Policy" 
-        content="default-src 'self'; 
-                 script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; 
-                 style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; 
-                 font-src 'self' https://fonts.gstatic.com; 
-                 img-src 'self' data: https:; 
-                 connect-src 'self' https://sheets.googleapis.com;
-                 frame-ancestors 'self';">
-  
   <!-- Include styles -->
   <link rel="icon" type="image/svg+xml"
     href="https://upload.wikimedia.org/wikipedia/commons/9/97/National_Fisheries_Research_and_Development_Institute_%28NFRDI%29.svg">
@@ -65,7 +50,7 @@
         <form class="d-flex" onsubmit="globalSearch(this.querySelector('input').value); return false;">
           <div class="input-group">
             <input class="form-control border-0 bg-white bg-opacity-10 text-white" type="search"
-              placeholder="Search..." id="global-search" maxlength="100" style="backdrop-filter: blur(5px);">
+              placeholder="Search..." id="global-search" style="backdrop-filter: blur(5px);">
             <button class="btn btn-outline-light border-0" type="submit">
               <i class="bi bi-search"></i>
             </button>

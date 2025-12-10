@@ -3008,10 +3008,11 @@ async function loadFMAMunicipalitiesMap() {
 function createFMABaseMapSelector() {
   if (!window.fmaMunicipalitiesMap || !window.fmaBaseMaps) return;
 
-  // Create custom control
+  // Create custom control positioned beside zoom controls
   const BaseMapControl = window.L.Control.extend({
     onAdd: function(map) {
       const container = window.L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom basemap-selector');
+      container.style.marginLeft = '10px';
       container.innerHTML = `
         <select id="fma-basemap-selector" class="basemap-select">
           <option value="OpenStreetMap">OpenStreetMap</option>
@@ -3037,8 +3038,9 @@ function createFMABaseMapSelector() {
     }
   });
 
-  // Add control to map (position: top-left, near zoom controls)
-  new BaseMapControl({ position: 'topleft' }).addTo(window.fmaMunicipalitiesMap);
+  // Add control to map (position: top-left, beside zoom controls)
+  const baseMapControl = new BaseMapControl({ position: 'topleft' });
+  baseMapControl.addTo(window.fmaMunicipalitiesMap);
 }
 
 // Switch base map for FMA municipalities map

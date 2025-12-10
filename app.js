@@ -2768,8 +2768,10 @@ function filterFMAMunicipalitiesMarkers() {
     }
     if (regionFilter && row.REGION !== regionFilter) return false;
     if (provinceFilter && row.PROVINCE !== provinceFilter) return false;
-    const municipality = (row.MUNICIPALITY || '').toLowerCase();
-    if (cityMunFilter && !municipality.includes(cityMunFilter)) return false;
+    if (cityMunFilter) {
+      const municipality = (row.MUNICIPALITY || row.CITY_MUN || '').toLowerCase();
+      if (!municipality.includes(cityMunFilter)) return false;
+    }
     return true;
   });
 

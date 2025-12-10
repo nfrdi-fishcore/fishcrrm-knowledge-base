@@ -5,6 +5,7 @@ const ROUTES = {
   'home': 'home',
   'structure': 'structure',
   'fmamunicipalities': 'fmamunicipalities',
+  'fmamunicipalitiesmap': 'fmamunicipalitiesmap',
   'activities': 'activities',
   'directory': 'directory',
   'references': 'references',
@@ -86,7 +87,7 @@ async function navigate(hash) {
     main.classList.add('pt-0');
     main.style.padding = '';
     main.style.margin = '';
-  } else if (page === 'landingcenters') {
+  } else if (page === 'landingcenters' || page === 'fmamunicipalitiesmap') {
     main.classList.remove('py-4', 'py-md-5', 'pt-0');
     main.style.padding = '0';
     main.style.margin = '0';
@@ -150,6 +151,7 @@ function initPage(page, hash) {
   }
   if (page === 'structure') loadStructure();
   if (page === 'fmamunicipalities') loadFMAMunicipalities();
+  if (page === 'fmamunicipalitiesmap') loadFMAMunicipalitiesMap();
   if (page === 'activities') loadActivities();
   if (page === 'directory') loadDirectory('internal');
   if (page === 'references') loadReferences();
@@ -2407,6 +2409,530 @@ function switchBaseMap(mapName) {
     
     // Update selector value to match current map
     const selector = document.getElementById('basemap-selector');
+    if (selector) {
+      selector.value = mapName;
+    }
+  }
+}
+
+// Global storage for FMA municipalities map data
+window.fmaMunicipalitiesData = [];
+window.allFMAMunicipalitiesMarkers = [];
+window.fmaMunicipalitiesMap = null;
+window.fmaCurrentTileLayer = null;
+window.fmaColorMap = {}; // Map FMA IDs to colors
+
+// Get color for an FMA (assigns consistent colors)
+function getFMAColor(fmaId) {
+  if (!fmaId) return '#6c757d'; // Default gray
+  
+  // If color already assigned, return it
+  if (window.fmaColorMap[fmaId]) {
+    return window.fmaColorMap[fmaId];
+  }
+  
+  // Define a palette of distinct colors
+  const colors = [
+    '#2066A8', // Blue
+    '#E74C3C', // Red
+    '#27AE60', // Green
+    '#F39C12', // Orange
+    '#9B59B6', // Purple
+    '#1ABC9C', // Teal
+    '#E67E22', // Dark Orange
+    '#3498DB', // Light Blue
+    '#E91E63', // Pink
+    '#00BCD4', // Cyan
+    '#FF9800', // Amber
+    '#795548', // Brown
+    '#607D8B', // Blue Grey
+    '#9C27B0', // Deep Purple
+    '#3F51B5'  // Indigo
+  ];
+  
+  // Get all unique FMAs and assign colors
+  if (Object.keys(window.fmaColorMap).length === 0 && window.fmaMunicipalitiesData.length > 0) {
+    const uniqueFMAs = [...new Set(window.fmaMunicipalitiesData.map(r => r.FMA_ID).filter(Boolean))].sort();
+    uniqueFMAs.forEach((fma, index) => {
+      window.fmaColorMap[fma] = colors[index % colors.length];
+    });
+  }
+  
+  // Return color for this FMA or default
+  return window.fmaColorMap[fmaId] || colors[0];
+}
+
+// Create a marker for an FMA municipality
+function createFMAMunicipalityMarker(row, L) {
+  const lat = parseFloat(row.LAT);
+  const lng = parseFloat(row.LONG);
+
+  if (isNaN(lat) || isNaN(lng)) return null;
+
+  const fmaId = row.FMA_ID || 'N/A';
+  const color = getFMAColor(fmaId);
+  const formatFMA = (fma) => {
+    if (!fma) return '-';
+    return fma.toUpperCase().startsWith('FMA') ? fma : `FMA ${fma}`;
+  };
+  
+  const popupContent = `
+    <div style="min-width: 200px;">
+      <h6 class="fw-bold mb-2" style="color: #151269;">${escapeHtml(row.MUNICIPALITY || 'N/A')}</h6>
+      <div class="small">
+        <div class="mb-1"><strong>FMA:</strong> <span class="badge" style="background: ${color}; color: white;">${escapeHtml(formatFMA(fmaId))}</span></div>
+        <div class="mb-1"><strong>Region:</strong> ${escapeHtml(row.REGION || 'N/A')}</div>
+        <div class="mb-1"><strong>Province:</strong> ${escapeHtml(row.PROVINCE || 'N/A')}</div>
+        <div class="mt-2 pt-2 border-top">
+          <small class="text-muted">
+            <i class="bi bi-geo-alt"></i> ${lat.toFixed(6)}, ${lng.toFixed(6)}
+          </small>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Create custom marker with FMA-specific color
+  const iconHtml = `
+    <i class="bi bi-geo-fill" style="color: ${color}; font-size: 24px;"></i>
+  `;
+
+  const customIcon = L.divIcon({
+    html: iconHtml,
+    className: 'custom-marker-icon',
+    iconSize: [24, 24],
+    iconAnchor: [12, 24],
+    popupAnchor: [0, -24]
+  });
+
+  return L.marker([lat, lng], {
+    icon: customIcon
+  }).bindPopup(popupContent);
+}
+
+// Filter and update FMA municipality markers on map
+function filterFMAMunicipalitiesMarkers() {
+  if (!window.fmaMunicipalitiesMap || !window.L) return;
+
+  const fmaFilter = document.getElementById('fma-map-filter-fma')?.value || '';
+  const regionFilter = document.getElementById('fma-map-filter-region')?.value || '';
+  const provinceFilter = document.getElementById('fma-map-filter-province')?.value || '';
+  const cityMunFilter = (document.getElementById('fma-map-filter-city-mun')?.value || '').trim().toLowerCase();
+
+  // Filter data based on selected filters
+  const filteredData = window.fmaMunicipalitiesData.filter(row => {
+    if (fmaFilter && row.FMA_ID !== fmaFilter) return false;
+    if (regionFilter && row.REGION !== regionFilter) return false;
+    if (provinceFilter && row.PROVINCE !== provinceFilter) return false;
+    const municipality = (row.MUNICIPALITY || '').toLowerCase();
+    if (cityMunFilter && !municipality.includes(cityMunFilter)) return false;
+    return true;
+  });
+
+  // Remove all markers from map
+  window.allFMAMunicipalitiesMarkers.forEach(marker => {
+    window.fmaMunicipalitiesMap.removeLayer(marker);
+  });
+
+  // Add filtered markers
+  window.allFMAMunicipalitiesMarkers = [];
+  const L = window.L;
+
+  filteredData.forEach(row => {
+    const marker = createFMAMunicipalityMarker(row, L);
+    if (marker) {
+      marker.addTo(window.fmaMunicipalitiesMap);
+      window.allFMAMunicipalitiesMarkers.push(marker);
+    }
+  });
+
+  // Update count
+  const markerCountEl = document.getElementById('fma-marker-count');
+  if (markerCountEl) markerCountEl.textContent = window.allFMAMunicipalitiesMarkers.length;
+
+  // Fit map bounds to show filtered markers
+  if (window.allFMAMunicipalitiesMarkers.length > 0) {
+    const group = new L.featureGroup(window.allFMAMunicipalitiesMarkers);
+    window.fmaMunicipalitiesMap.fitBounds(group.getBounds().pad(0.1));
+  }
+}
+
+// Update FMA legend
+function updateFMALegend() {
+  const legendContent = document.getElementById('fma-legend-content');
+  if (!legendContent) return;
+
+  // Get unique FMAs with their colors
+  const fmas = [...new Set(window.fmaMunicipalitiesData.map(r => r.FMA_ID).filter(Boolean))].sort();
+  
+  if (fmas.length === 0) {
+    legendContent.innerHTML = '<p class="text-muted small mb-0">No FMA data available</p>';
+    return;
+  }
+
+  const legendHTML = fmas.map(fma => {
+    const color = getFMAColor(fma);
+    const formatFMA = (fma) => {
+      if (!fma) return '-';
+      return fma.toUpperCase().startsWith('FMA') ? fma : `FMA ${fma}`;
+    };
+    
+    return `
+      <div class="d-flex align-items-center mb-2">
+        <i class="bi bi-geo-fill me-2" style="color: ${color}; font-size: 20px;"></i>
+        <span class="small fw-semibold" style="color: #151269;">${escapeHtml(formatFMA(fma))}</span>
+      </div>
+    `;
+  }).join('');
+
+  legendContent.innerHTML = legendHTML;
+}
+
+// Load FMA municipalities map
+async function loadFMAMunicipalitiesMap() {
+  const mapContainer = document.getElementById('fma-municipalities-map');
+  const loadingEl = document.getElementById('fma-map-loading');
+  const errorEl = document.getElementById('fma-map-error');
+  const errorMessageEl = document.getElementById('fma-map-error-message');
+  const infoEl = document.getElementById('fma-map-info');
+  const markerCountEl = document.getElementById('fma-marker-count');
+  const filterSidebar = document.getElementById('fma-municipalities-filter-sidebar');
+  const toggleButton = document.getElementById('toggle-fma-filter-sidebar');
+  const closeButton = document.getElementById('close-fma-filter-sidebar');
+  const legendPanel = document.getElementById('fma-legend-panel');
+  const toggleLegendButton = document.getElementById('toggle-fma-legend');
+  const closeLegendButton = document.getElementById('close-fma-legend');
+
+  if (!mapContainer || !loadingEl) {
+    console.error('FMA municipalities map page elements not found');
+    return;
+  }
+
+  // Initialize filter sidebar - show by default
+  if (filterSidebar) {
+    filterSidebar.classList.add('show');
+  }
+  if (toggleButton) {
+    toggleButton.style.display = 'none';
+  }
+
+  // Set up filter sidebar toggle functionality
+  if (toggleButton && filterSidebar) {
+    toggleButton.addEventListener('click', () => {
+      filterSidebar.classList.add('show');
+      toggleButton.style.display = 'none';
+    });
+  }
+
+  if (closeButton && filterSidebar && toggleButton) {
+    closeButton.addEventListener('click', () => {
+      filterSidebar.classList.remove('show');
+      toggleButton.style.display = 'flex';
+    });
+  }
+
+  // Set up legend toggle functionality
+  if (toggleLegendButton && legendPanel) {
+    toggleLegendButton.addEventListener('click', () => {
+      if (legendPanel.style.display === 'none' || !legendPanel.style.display) {
+        legendPanel.style.display = 'block';
+        legendPanel.classList.add('show');
+        toggleLegendButton.style.display = 'none';
+      } else {
+        legendPanel.style.display = 'none';
+        legendPanel.classList.remove('show');
+        toggleLegendButton.style.display = 'flex';
+      }
+    });
+  }
+
+  if (closeLegendButton && legendPanel && toggleLegendButton) {
+    closeLegendButton.addEventListener('click', () => {
+      legendPanel.style.display = 'none';
+      legendPanel.classList.remove('show');
+      toggleLegendButton.style.display = 'flex';
+    });
+  }
+
+  // Initialize map variables if not already set
+  if (!window.fmaMunicipalitiesMap) {
+    window.fmaMunicipalitiesMap = null;
+  }
+  if (!window.allFMAMunicipalitiesMarkers) {
+    window.allFMAMunicipalitiesMarkers = [];
+  }
+  if (!window.fmaMunicipalitiesData) {
+    window.fmaMunicipalitiesData = [];
+  }
+  if (!window.fmaColorMap) {
+    window.fmaColorMap = {};
+  }
+
+  try {
+    console.log('Loading FMA Municipalities Map...');
+    
+    // Load Leaflet if not already loaded
+    const L = await loadLeaflet();
+    
+    const data = await dataService.getFMAMunicipalities();
+    console.log('FMA Municipalities data received:', data);
+    
+    if (!data || data.length === 0) {
+      loadingEl.innerHTML = `
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-inbox display-6 d-block mb-2 opacity-50"></i>
+          <p class="mb-0">No FMA municipalities data available.</p>
+          <small class="text-muted">Please check that the FMA_Municipalities sheet exists and has data.</small>
+        </div>
+      `;
+      return;
+    }
+
+    // Filter valid coordinates
+    const validData = data.filter(row => {
+      const lat = parseFloat(row.LAT);
+      const lng = parseFloat(row.LONG);
+      return !isNaN(lat) && !isNaN(lng) && 
+             lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+    });
+
+    console.log(`Filtered ${validData.length} valid municipalities from ${data.length} total rows`);
+
+    if (validData.length === 0) {
+      loadingEl.innerHTML = `
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-exclamation-circle display-6 d-block mb-2 opacity-50"></i>
+          <p class="mb-0">No municipalities with valid coordinates found.</p>
+          <small class="text-muted">Please ensure LAT and LONG columns have valid values.</small>
+        </div>
+      `;
+      return;
+    }
+
+    // Store valid data globally
+    window.fmaMunicipalitiesData = validData;
+
+    // Initialize color map
+    const uniqueFMAs = [...new Set(validData.map(r => r.FMA_ID).filter(Boolean))].sort();
+    const colors = [
+      '#2066A8', '#E74C3C', '#27AE60', '#F39C12', '#9B59B6',
+      '#1ABC9C', '#E67E22', '#3498DB', '#E91E63', '#00BCD4',
+      '#FF9800', '#795548', '#607D8B', '#9C27B0', '#3F51B5'
+    ];
+    uniqueFMAs.forEach((fma, index) => {
+      window.fmaColorMap[fma] = colors[index % colors.length];
+    });
+
+    // Update legend
+    updateFMALegend();
+
+    // Populate filter dropdowns
+    const fmas = [...new Set(validData.map(r => r.FMA).filter(Boolean))].sort();
+    const regions = [...new Set(validData.map(r => r.REGION).filter(Boolean))].sort();
+
+    const fmaSelect = document.getElementById('fma-map-filter-fma');
+    const regionSelect = document.getElementById('fma-map-filter-region');
+    const provinceSelect = document.getElementById('fma-map-filter-province');
+
+    if (fmaSelect) {
+      const formatFMA = (fma) => {
+        if (!fma) return '-';
+        return fma.toUpperCase().startsWith('FMA') ? fma : `FMA ${fma}`;
+      };
+      fmaSelect.innerHTML = '<option value="">All FMAs</option>' + 
+        fmas.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(formatFMA(f))}</option>`).join('');
+    }
+
+    if (regionSelect) {
+      regionSelect.innerHTML = '<option value="">All Regions</option>' + 
+        regions.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
+    }
+
+    // Handle region change to populate provinces
+    if (regionSelect && provinceSelect) {
+      regionSelect.addEventListener('change', () => {
+        const selectedRegion = regionSelect.value;
+        provinceSelect.innerHTML = '<option value="">All Provinces</option>';
+        provinceSelect.disabled = !selectedRegion;
+
+        if (selectedRegion) {
+          const provinces = [...new Set(
+            validData
+              .filter(r => r.REGION === selectedRegion)
+              .map(r => r.PROVINCE)
+              .filter(Boolean)
+          )].sort();
+          
+          provinces.forEach(prov => {
+            const opt = document.createElement('option');
+            opt.value = prov;
+            opt.textContent = prov;
+            provinceSelect.appendChild(opt);
+          });
+        }
+
+        filterFMAMunicipalitiesMarkers();
+      });
+    }
+
+    // Add event listeners to all filters
+    const filterInputs = ['fma-map-filter-fma', 'fma-map-filter-region', 'fma-map-filter-province', 
+                          'fma-map-filter-city-mun'];
+    filterInputs.forEach(filterId => {
+      const el = document.getElementById(filterId);
+      if (el) {
+        el.addEventListener('input', debounce(filterFMAMunicipalitiesMarkers, 300));
+        el.addEventListener('change', filterFMAMunicipalitiesMarkers);
+      }
+    });
+
+    // Reset filters button
+    const resetBtn = document.getElementById('fma-map-reset-filters');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        filterInputs.forEach(filterId => {
+          const el = document.getElementById(filterId);
+          if (el) {
+            el.value = '';
+            if (el.tagName === 'SELECT') {
+              el.disabled = filterId === 'fma-map-filter-province';
+            }
+          }
+        });
+        if (provinceSelect) {
+          provinceSelect.innerHTML = '<option value="">All Provinces (select region first)</option>';
+        }
+        filterFMAMunicipalitiesMarkers();
+      });
+    }
+
+    // Hide loading, show map
+    loadingEl.style.display = 'none';
+    mapContainer.style.display = 'block';
+    infoEl.classList.remove('d-none');
+
+    // Clean up existing map if it exists
+    if (window.fmaMunicipalitiesMap) {
+      window.fmaMunicipalitiesMap.remove();
+      window.allFMAMunicipalitiesMarkers = [];
+    }
+
+    // Initialize map (center on first marker)
+    const firstLat = parseFloat(validData[0].LAT);
+    const firstLng = parseFloat(validData[0].LONG);
+    
+    window.fmaMunicipalitiesMap = L.map('fma-municipalities-map').setView([firstLat, firstLng], 6);
+
+    // Define base map options (same as landing centers)
+    const baseMaps = {
+      'OpenStreetMap': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      }),
+      'CartoDB Positron': L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+      }),
+      'CartoDB Dark Matter': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+      }),
+      'Esri World Imagery': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+        maxZoom: 19
+      }),
+      'Esri World Street Map': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',
+        maxZoom: 19
+      }),
+      'Stamen Terrain': L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}{r}.png', {
+        attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        subdomains: 'abcd',
+        maxZoom: 18
+      })
+    };
+
+    // Add default tile layer (OpenStreetMap)
+    window.fmaCurrentTileLayer = baseMaps['OpenStreetMap'];
+    window.fmaCurrentTileLayer.addTo(window.fmaMunicipalitiesMap);
+    window.fmaBaseMaps = baseMaps; // Store for base map selector
+
+    // Add base map selector control
+    createFMABaseMapSelector();
+
+    // Resize map to ensure it fills container properly
+    setTimeout(() => {
+      if (window.fmaMunicipalitiesMap) {
+        window.fmaMunicipalitiesMap.invalidateSize();
+      }
+    }, 100);
+
+    // Initial load - add all markers
+    filterFMAMunicipalitiesMarkers();
+
+    console.log(`Successfully loaded ${window.allFMAMunicipalitiesMarkers.length} FMA municipalities on map`);
+
+  } catch (err) {
+    console.error('Error loading FMA municipalities map:', err);
+    loadingEl.style.display = 'none';
+    errorEl.classList.remove('d-none');
+    errorMessageEl.textContent = err.message || 'Failed to load FMA municipalities data. Please try again later.';
+  }
+}
+
+// Create base map selector control for FMA municipalities map
+function createFMABaseMapSelector() {
+  if (!window.fmaMunicipalitiesMap || !window.fmaBaseMaps) return;
+
+  // Create custom control
+  const BaseMapControl = window.L.Control.extend({
+    onAdd: function(map) {
+      const container = window.L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom basemap-selector');
+      container.innerHTML = `
+        <select id="fma-basemap-selector" class="basemap-select">
+          <option value="OpenStreetMap">OpenStreetMap</option>
+          <option value="CartoDB Positron">CartoDB Positron</option>
+          <option value="CartoDB Dark Matter">CartoDB Dark Matter</option>
+          <option value="Esri World Imagery">Satellite Imagery</option>
+          <option value="Esri World Street Map">Esri Street Map</option>
+          <option value="Stamen Terrain">Terrain</option>
+        </select>
+      `;
+      
+      // Prevent map drag when interacting with control
+      window.L.DomEvent.disableClickPropagation(container);
+      window.L.DomEvent.disableScrollPropagation(container);
+      
+      // Add change event listener
+      const select = container.querySelector('#fma-basemap-selector');
+      select.addEventListener('change', function(e) {
+        switchFMABaseMap(e.target.value);
+      });
+      
+      return container;
+    }
+  });
+
+  // Add control to map (position: top-left, near zoom controls)
+  new BaseMapControl({ position: 'topleft' }).addTo(window.fmaMunicipalitiesMap);
+}
+
+// Switch base map for FMA municipalities map
+function switchFMABaseMap(mapName) {
+  if (!window.fmaMunicipalitiesMap || !window.fmaBaseMaps || !window.fmaCurrentTileLayer) return;
+
+  // Remove current tile layer
+  window.fmaMunicipalitiesMap.removeLayer(window.fmaCurrentTileLayer);
+  
+  // Add new tile layer
+  window.fmaCurrentTileLayer = window.fmaBaseMaps[mapName];
+  if (window.fmaCurrentTileLayer) {
+    window.fmaCurrentTileLayer.addTo(window.fmaMunicipalitiesMap);
+    
+    // Update selector value to match current map
+    const selector = document.getElementById('fma-basemap-selector');
     if (selector) {
       selector.value = mapName;
     }

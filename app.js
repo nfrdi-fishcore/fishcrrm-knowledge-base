@@ -2874,6 +2874,42 @@ async function loadFMAMunicipalitiesMap() {
     toggleButton.style.display = 'none';
   }
 
+  // Function to set uniform button widths
+  function setUniformButtonWidths() {
+    const filterButton = document.getElementById('toggle-fma-filter-sidebar');
+    const legendButton = document.getElementById('toggle-fma-legend');
+    const downloadButton = document.getElementById('download-fma-map-screenshot');
+    
+    if (!filterButton || !legendButton || !downloadButton) return;
+    
+    // Temporarily show all buttons to measure their widths
+    const originalDisplays = {
+      filter: filterButton.style.display,
+      legend: legendButton.style.display,
+      download: downloadButton.style.display
+    };
+    
+    filterButton.style.display = 'flex';
+    legendButton.style.display = 'flex';
+    downloadButton.style.display = 'flex';
+    
+    // Get the widest button width
+    const filterWidth = filterButton.offsetWidth;
+    const legendWidth = legendButton.offsetWidth;
+    const downloadWidth = downloadButton.offsetWidth;
+    const maxWidth = Math.max(filterWidth, legendWidth, downloadWidth);
+    
+    // Set all buttons to the widest width
+    filterButton.style.width = `${maxWidth}px`;
+    legendButton.style.width = `${maxWidth}px`;
+    downloadButton.style.width = `${maxWidth}px`;
+    
+    // Restore original display states
+    filterButton.style.display = originalDisplays.filter;
+    legendButton.style.display = originalDisplays.legend;
+    downloadButton.style.display = originalDisplays.download;
+  }
+
   // Function to update button positions and legend panel position based on filter pane visibility
   function updateFMAButtonPositions() {
     const legendButton = document.getElementById('toggle-fma-legend');
@@ -2881,6 +2917,7 @@ async function loadFMAMunicipalitiesMap() {
     const filterSidebar = document.getElementById('fma-municipalities-filter-sidebar');
     const legendPanel = document.getElementById('fma-legend-panel');
     const filterToggleButton = document.getElementById('toggle-fma-filter-sidebar');
+    const infoPanel = document.getElementById('fma-map-info');
     
     if (!legendButton || !downloadButton) return;
     
@@ -2888,14 +2925,17 @@ async function loadFMAMunicipalitiesMap() {
     const buttonSpacing = 15;
     const filterButtonTop = 20;
     const filterButtonHeight = 44;
+    const rightMargin = 20;
     
     let legendButtonTop, downloadButtonTop;
     let legendPanelTop;
     
     // Check if legend panel is shown
     const isLegendShown = legendPanel && legendPanel.classList.contains('show');
+    const isFilterShown = filterSidebar && filterSidebar.classList.contains('show');
     
-    if (filterSidebar && filterSidebar.classList.contains('show')) {
+    // Calculate button positions
+    if (isFilterShown) {
       // Filter pane is shown - position buttons below it
       const filterPane = filterSidebar.querySelector('.glass-panel');
       if (filterPane) {
@@ -2920,11 +2960,13 @@ async function loadFMAMunicipalitiesMap() {
             const legendPanelHeight = legendPanel.offsetHeight || legendPanel.scrollHeight;
             downloadButtonTop = legendPanelTop + legendPanelHeight + buttonSpacing;
             downloadButton.style.top = `${downloadButtonTop}px`;
+            updateInfoPanelPosition();
           });
         } else {
           // Legend panel is hidden - position download button below legend button
           downloadButtonTop = legendButtonTop + buttonHeight + buttonSpacing;
           downloadButton.style.top = `${downloadButtonTop}px`;
+          updateInfoPanelPosition();
         }
       }
     } else {
@@ -2946,13 +2988,66 @@ async function loadFMAMunicipalitiesMap() {
           const legendPanelHeight = legendPanel.offsetHeight || legendPanel.scrollHeight;
           downloadButtonTop = legendPanelTop + legendPanelHeight + buttonSpacing;
           downloadButton.style.top = `${downloadButtonTop}px`;
+          updateInfoPanelPosition();
         });
       } else {
         // Legend panel is hidden - position download button below legend button
         downloadButtonTop = legendButtonTop + buttonHeight + buttonSpacing;
         downloadButton.style.top = `${downloadButtonTop}px`;
+        updateInfoPanelPosition();
       }
     }
+    
+    // Function to update info panel position
+    function updateInfoPanelPosition() {
+      if (!infoPanel) return;
+      
+      const mapContainer = document.querySelector('.landing-centers-map-wrapper');
+      if (!mapContainer) return;
+      
+      const spacing = 15; // Spacing between info panel and buttons/panels
+      let rightPosition = rightMargin; // Start with default right margin
+      
+      // Add width of filter pane if shown
+      if (isFilterShown) {
+        const filterPane = filterSidebar.querySelector('.glass-panel');
+        if (filterPane) {
+          rightPosition += filterPane.offsetWidth + spacing;
+        }
+      }
+      
+      // Add width of legend panel if shown
+      if (isLegendShown) {
+        const legendPane = legendPanel.querySelector('.glass-panel');
+        if (legendPane) {
+          rightPosition += legendPane.offsetWidth + spacing;
+        }
+      }
+      
+      // Add width of buttons (they're all the same width now)
+      if (filterToggleButton && filterToggleButton.style.display !== 'none') {
+        rightPosition += filterToggleButton.offsetWidth + spacing;
+      } else {
+        // If filter button is hidden, check other visible buttons
+        const visibleButtons = [legendButton, downloadButton].filter(btn => 
+          btn && btn.style.display !== 'none'
+        );
+        if (visibleButtons.length > 0) {
+          rightPosition += visibleButtons[0].offsetWidth + spacing;
+        }
+      }
+      
+      // Position info panel to the left of buttons/panels
+      infoPanel.style.right = `${rightPosition}px`;
+      infoPanel.style.left = 'auto';
+      infoPanel.style.bottom = '20px';
+      infoPanel.style.top = 'auto';
+    }
+    
+    // Call updateInfoPanelPosition after a short delay to ensure buttons are positioned
+    setTimeout(() => {
+      updateInfoPanelPosition();
+    }, 50);
   }
 
   // Set up filter sidebar toggle functionality
@@ -3016,6 +3111,12 @@ async function loadFMAMunicipalitiesMap() {
       updateFMAButtonPositions();
     });
   }
+  
+  // Set uniform button widths after initial load
+  setTimeout(() => {
+    setUniformButtonWidths();
+    updateFMAButtonPositions();
+  }, 100);
   
   // Initial button position update - delay to ensure filter pane is rendered
   setTimeout(() => {

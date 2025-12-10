@@ -20,7 +20,7 @@
           </button>
         </div>
         
-        <div id="fma-filters-container">
+        <div id="fma-filters-container" style="display: flex; flex-direction: column; gap: 1rem;">
           <div class="filter-item">
             <select id="fma-map-filter-fma" class="form-select form-select-sm filter-input">
               <option value="">All FMAs</option>
@@ -43,7 +43,7 @@
             <input type="text" id="fma-map-filter-city-mun" class="form-control form-control-sm filter-input" placeholder="Search city/municipality...">
           </div>
 
-          <div class="filter-actions">
+          <div class="filter-actions" style="margin-top: 0.5rem; padding-top: 1.25rem; border-top: 1px solid rgba(21, 18, 105, 0.1);">
             <button id="fma-map-reset-filters" class="btn btn-sm w-100 filter-reset-btn" type="button">
               <i class="bi bi-arrow-counterclockwise me-2"></i>Reset All Filters
             </button>

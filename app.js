@@ -3037,11 +3037,11 @@ async function loadFMAMunicipalitiesMap() {
         }
       }
       
-      // Position info panel to the left of buttons/panels
+      // Position info panel to the left of buttons/panels at the top
       infoPanel.style.right = `${rightPosition}px`;
       infoPanel.style.left = 'auto';
-      infoPanel.style.bottom = '20px';
-      infoPanel.style.top = 'auto';
+      infoPanel.style.bottom = 'auto';
+      infoPanel.style.top = '20px';
     }
     
     // Call updateInfoPanelPosition after a short delay to ensure buttons are positioned

@@ -2561,15 +2561,15 @@ function createFMAMunicipalityMarker(row, L) {
 
   // Create custom marker with FMA-specific color
   const iconHtml = `
-    <i class="bi bi-crosshair2" style="color: ${color}; font-size: 24px;"></i>
+    <i class="bi bi-crosshair2" style="color: ${color}; font-size: 24px; display: block; text-align: center;"></i>
   `;
 
   const customIcon = L.divIcon({
     html: iconHtml,
     className: 'custom-marker-icon',
     iconSize: [24, 24],
-    iconAnchor: [12, 24],
-    popupAnchor: [0, -24]
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12]
   });
 
   return L.marker([lat, lng], {

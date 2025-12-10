@@ -2559,9 +2559,9 @@ function createFMAMunicipalityMarker(row, L) {
     </div>
   `;
 
-  // Create custom marker with FMA-specific color using pin-map icon
+  // Create custom marker with FMA-specific color using geo-alt icon
   const iconHtml = `
-    <i class="bi bi-pin-map-fill" style="color: ${color}; font-size: 24px; display: block; text-align: center;"></i>
+    <i class="bi bi-geo-alt-fill" style="color: ${color}; font-size: 24px; display: block; text-align: center;"></i>
   `;
 
   const customIcon = L.divIcon({
@@ -2663,7 +2663,7 @@ function updateFMALegend() {
     
     return `
       <div class="d-flex align-items-center mb-2">
-        <i class="bi bi-pin-map-fill me-2" style="color: ${color}; font-size: 20px;"></i>
+        <i class="bi bi-geo-alt-fill me-2" style="color: ${color}; font-size: 20px;"></i>
         <span class="small fw-semibold" style="color: #151269;">${escapeHtml(formatFMA(fma))}</span>
       </div>
     `;

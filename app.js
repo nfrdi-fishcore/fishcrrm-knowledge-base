@@ -2874,11 +2874,13 @@ async function loadFMAMunicipalitiesMap() {
     toggleButton.style.display = 'none';
   }
 
-  // Function to update button positions based on filter pane visibility
+  // Function to update button positions and legend panel position based on filter pane visibility
   function updateFMAButtonPositions() {
     const legendButton = document.getElementById('toggle-fma-legend');
     const downloadButton = document.getElementById('download-fma-map-screenshot');
     const filterSidebar = document.getElementById('fma-municipalities-filter-sidebar');
+    const legendPanel = document.getElementById('fma-legend-panel');
+    const filterToggleButton = document.getElementById('toggle-fma-filter-sidebar');
     
     if (!legendButton || !downloadButton) return;
     
@@ -2886,6 +2888,9 @@ async function loadFMAMunicipalitiesMap() {
     const buttonSpacing = 15;
     const filterButtonTop = 20;
     const filterButtonHeight = 44;
+    
+    let legendButtonTop, downloadButtonTop;
+    let legendPanelTop, legendPanelMaxHeight;
     
     if (filterSidebar && filterSidebar.classList.contains('show')) {
       // Filter pane is shown - position buttons below it
@@ -2895,14 +2900,33 @@ async function loadFMAMunicipalitiesMap() {
         const filterPaneTop = 20; // Filter sidebar top position
         const buttonsTop = filterPaneTop + filterPaneHeight + 15; // 15px spacing below filter pane
         
-        legendButton.style.top = `${buttonsTop}px`;
-        downloadButton.style.top = `${buttonsTop + buttonHeight + buttonSpacing}px`;
+        legendButtonTop = buttonsTop;
+        downloadButtonTop = buttonsTop + buttonHeight + buttonSpacing;
+        
+        legendButton.style.top = `${legendButtonTop}px`;
+        downloadButton.style.top = `${downloadButtonTop}px`;
+        
+        // Position legend panel between Filter button (or filter pane bottom) and Download button
+        legendPanelTop = filterButtonTop + filterButtonHeight + buttonSpacing;
+        legendPanelMaxHeight = downloadButtonTop - legendPanelTop - buttonSpacing;
       }
     } else {
       // Filter pane is hidden - position buttons below Filter toggle button
-      const buttonsTop = filterButtonTop + filterButtonHeight + buttonSpacing;
-      legendButton.style.top = `${buttonsTop}px`;
-      downloadButton.style.top = `${buttonsTop + buttonHeight + buttonSpacing}px`;
+      legendButtonTop = filterButtonTop + filterButtonHeight + buttonSpacing;
+      downloadButtonTop = legendButtonTop + buttonHeight + buttonSpacing;
+      
+      legendButton.style.top = `${legendButtonTop}px`;
+      downloadButton.style.top = `${downloadButtonTop}px`;
+      
+      // Position legend panel between Filter button and Download button
+      legendPanelTop = filterButtonTop + filterButtonHeight + buttonSpacing;
+      legendPanelMaxHeight = downloadButtonTop - legendPanelTop - buttonSpacing;
+    }
+    
+    // Update legend panel position
+    if (legendPanel && legendPanelTop && legendPanelMaxHeight) {
+      legendPanel.style.top = `${legendPanelTop}px`;
+      legendPanel.style.maxHeight = `${Math.max(200, legendPanelMaxHeight)}px`; // Minimum 200px height
     }
   }
 
@@ -2937,8 +2961,6 @@ async function loadFMAMunicipalitiesMap() {
   // Set up legend toggle functionality
   if (toggleLegendButton && legendPanel) {
     toggleLegendButton.addEventListener('click', () => {
-      legendPanel.classList.add('show');
-      toggleLegendButton.style.display = 'none';
       // Hide filter when legend is shown
       if (filterSidebar) {
         filterSidebar.classList.remove('show');
@@ -2946,8 +2968,14 @@ async function loadFMAMunicipalitiesMap() {
       if (toggleButton) {
         toggleButton.style.display = 'flex';
       }
-      // Update button positions when filter is hidden
+      // Update button positions first, then show legend
       updateFMAButtonPositions();
+      setTimeout(() => {
+        legendPanel.classList.add('show');
+        toggleLegendButton.style.display = 'none';
+        // Update positions again after legend is shown to ensure proper positioning
+        updateFMAButtonPositions();
+      }, 50);
     });
   }
 

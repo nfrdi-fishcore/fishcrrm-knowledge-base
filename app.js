@@ -2229,7 +2229,7 @@ function createLandingCenterMarker(row, L) {
     </div>
   `;
 
-  // Create custom marker with FMA-specific color using geo-alt-fill icon (same as FMA Municipalities map)
+  // Create custom marker with FMA-specific color using geo-alt-fill icon
   const iconHtml = `
     <i class="bi bi-geo-alt-fill" style="color: ${color}; font-size: 24px; display: block; text-align: center;"></i>
   `;
@@ -3176,9 +3176,9 @@ function createFMAMunicipalityMarker(row, L) {
     </div>
   `;
 
-  // Create custom marker with FMA-specific color using geo-alt icon
+  // Create custom marker with FMA-specific color using geo-alt-fill icon (same as Landing Centers map)
   const iconHtml = `
-    <i class="bi bi-geo-fill" style="color: ${color}; font-size: 24px; display: block; text-align: center;"></i>
+    <i class="bi bi-geo-alt-fill" style="color: ${color}; font-size: 24px; display: block; text-align: center;"></i>
   `;
 
   const customIcon = L.divIcon({
@@ -3280,9 +3280,9 @@ function updateFMALegend() {
   const legendHTML = fmas.map(fma => {
     const color = getFMAColor(fma);
     
-    return `
+      return `
       <div class="d-flex align-items-center mb-2">
-        <i class="bi bi-geo-fill me-2" style="color: ${color}; font-size: 20px;"></i>
+        <i class="bi bi-geo-alt-fill me-2" style="color: ${color}; font-size: 20px;"></i>
         <span class="small fw-semibold" style="color: #151269;">${escapeHtml(formatFMA(fma))}</span>
       </div>
     `;

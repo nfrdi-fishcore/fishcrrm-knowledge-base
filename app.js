@@ -2686,6 +2686,7 @@ async function loadFMAMunicipalitiesMap() {
   const legendPanel = document.getElementById('fma-legend-panel');
   const toggleLegendButton = document.getElementById('toggle-fma-legend');
   const closeLegendButton = document.getElementById('close-fma-legend');
+  const downloadButton = document.getElementById('download-fma-map-screenshot');
 
   if (!mapContainer || !loadingEl) {
     console.error('FMA municipalities map page elements not found');
@@ -2735,6 +2736,13 @@ async function loadFMAMunicipalitiesMap() {
       legendPanel.style.display = 'none';
       legendPanel.classList.remove('show');
       toggleLegendButton.style.display = 'flex';
+    });
+  }
+
+  // Set up download screenshot functionality
+  if (downloadButton) {
+    downloadButton.addEventListener('click', async () => {
+      await downloadMapScreenshot();
     });
   }
 
@@ -3049,6 +3057,98 @@ function switchFMABaseMap(mapName) {
     const selector = document.getElementById('fma-basemap-selector');
     if (selector) {
       selector.value = mapName;
+    }
+  }
+}
+
+// Load html2canvas library dynamically
+function loadHtml2Canvas() {
+  return new Promise((resolve, reject) => {
+    // Check if html2canvas is already loaded
+    if (window.html2canvas) {
+      resolve(window.html2canvas);
+      return;
+    }
+
+    // Load html2canvas library
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+    script.integrity = 'sha256-1nYv3Tf1P3l6l5K5v5q5K5v5q5K5v5q5K5v5q5K5v5q5K5';
+    script.crossOrigin = 'anonymous';
+    script.onload = () => resolve(window.html2canvas);
+    script.onerror = () => reject(new Error('Failed to load html2canvas library'));
+    document.head.appendChild(script);
+  });
+}
+
+// Download map screenshot
+async function downloadMapScreenshot() {
+  const mapContainer = document.getElementById('fma-municipalities-map');
+  if (!mapContainer || !window.fmaMunicipalitiesMap) {
+    showToast('Map not available for screenshot', 'warning');
+    return;
+  }
+
+  try {
+    // Show loading state
+    const downloadButton = document.getElementById('download-fma-map-screenshot');
+    const originalContent = downloadButton ? downloadButton.innerHTML : '';
+    if (downloadButton) {
+      downloadButton.disabled = true;
+      downloadButton.innerHTML = '<i class="bi bi-hourglass-split"></i><span class="toggle-badge">Processing...</span>';
+    }
+
+    // Load html2canvas if needed
+    const html2canvas = await loadHtml2Canvas();
+
+    // Wait a bit for map to render
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Capture the map container
+    const canvas = await html2canvas(mapContainer, {
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#ffffff',
+      scale: 1,
+      logging: false,
+      width: mapContainer.offsetWidth,
+      height: mapContainer.offsetHeight
+    });
+
+    // Convert canvas to blob and download
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        showToast('Failed to generate screenshot', 'danger');
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+      link.download = `fma-municipalities-map-${timestamp}.png`;
+      link.href = url;
+      link.click();
+      
+      // Clean up
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+      showToast('Map screenshot downloaded successfully!', 'success');
+    }, 'image/png');
+
+    // Restore button state
+    if (downloadButton) {
+      downloadButton.disabled = false;
+      downloadButton.innerHTML = originalContent;
+    }
+
+  } catch (err) {
+    console.error('Error capturing map screenshot:', err);
+    showToast('Failed to capture screenshot: ' + err.message, 'danger');
+    
+    // Restore button state
+    const downloadButton = document.getElementById('download-fma-map-screenshot');
+    if (downloadButton) {
+      downloadButton.disabled = false;
+      downloadButton.innerHTML = '<i class="bi bi-download"></i><span class="toggle-badge">Download</span>';
     }
   }
 }

@@ -2517,65 +2517,42 @@ function createFMAMunicipalityMarker(row, L) {
     return `FMA ${fma}`;
   };
   
+  const cityMun = row.CITY_MUN || row.MUNICIPALITY || 'N/A';
+  
   const popupContent = `
-    <div style="min-width: 280px; max-width: 320px; font-family: 'Outfit', sans-serif;">
-      <!-- Header Section -->
-      <div style="background: linear-gradient(135deg, #151269 0%, #0f1056 100%); color: white; padding: 1rem; border-radius: 8px 8px 0 0; margin: -12px -12px 0.75rem -12px;">
-        <div class="d-flex align-items-center gap-2 mb-1">
-          <i class="bi bi-geo-alt-fill" style="font-size: 1.25rem;"></i>
-          <h6 class="fw-bold mb-0" style="color: white; font-size: 1.1rem; line-height: 1.3;">${escapeHtml(row.MUNICIPALITY || 'N/A')}</h6>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-          <span class="badge rounded-pill px-3 py-1" style="background: rgba(255, 255, 255, 0.25); color: white; font-size: 0.85rem; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.3);">
-            <i class="bi bi-diagram-3 me-1"></i>${escapeHtml(formatFMA(fmaId))}
-          </span>
-        </div>
+    <div style="min-width: 240px; max-width: 280px; font-family: 'Outfit', sans-serif;">
+      <!-- City/Municipality Name -->
+      <div style="margin-bottom: 1rem;">
+        <h6 class="fw-bold mb-0" style="color: #151269; font-size: 1.1rem; line-height: 1.4;">${escapeHtml(cityMun)}</h6>
       </div>
       
-      <!-- Details Section -->
-      <div style="padding: 0 0.25rem;">
-        <div class="mb-3" style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.5rem; border-radius: 6px; background: rgba(21, 18, 105, 0.03);">
-          <div style="flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: rgba(21, 18, 105, 0.1); border-radius: 6px;">
-            <i class="bi bi-diagram-3" style="color: ${color}; font-size: 1rem;"></i>
-          </div>
-          <div style="flex: 1; min-width: 0;">
-            <div style="font-size: 0.7rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 0.25rem;">FMA</div>
-            <div style="font-size: 0.95rem; color: #151269; font-weight: 600;">
-              <span class="badge rounded-pill px-2 py-1" style="background: ${color}; color: white; font-size: 0.85rem;">${escapeHtml(formatFMA(fmaId))}</span>
-            </div>
+      <!-- Details List -->
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <!-- Region -->
+        <div style="display: flex; align-items: center; gap: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(21, 18, 105, 0.1);">
+          <div style="flex-shrink: 0; color: #6c757d; font-size: 0.9rem; width: 70px; font-weight: 500;">Region:</div>
+          <div style="flex: 1; color: #151269; font-weight: 500; font-size: 0.95rem;">${escapeHtml(row.REGION || 'N/A')}</div>
+        </div>
+        
+        <!-- Province -->
+        <div style="display: flex; align-items: center; gap: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(21, 18, 105, 0.1);">
+          <div style="flex-shrink: 0; color: #6c757d; font-size: 0.9rem; width: 70px; font-weight: 500;">Province:</div>
+          <div style="flex: 1; color: #151269; font-weight: 500; font-size: 0.95rem;">${escapeHtml(row.PROVINCE || 'N/A')}</div>
+        </div>
+        
+        <!-- FMA -->
+        <div style="display: flex; align-items: center; gap: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(21, 18, 105, 0.1);">
+          <div style="flex-shrink: 0; color: #6c757d; font-size: 0.9rem; width: 70px; font-weight: 500;">FMA:</div>
+          <div style="flex: 1;">
+            <span class="badge rounded-pill px-2.5 py-1" style="background: ${color}; color: white; font-size: 0.85rem; font-weight: 600;">${escapeHtml(formatFMA(fmaId))}</span>
           </div>
         </div>
-
-        <div class="mb-3" style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.5rem; border-radius: 6px;">
-          <div style="flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: rgba(21, 18, 105, 0.1); border-radius: 6px;">
-            <i class="bi bi-geo-alt-fill" style="color: #151269; font-size: 1rem;"></i>
-          </div>
-          <div style="flex: 1; min-width: 0;">
-            <div style="font-size: 0.7rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 0.25rem;">Region</div>
-            <div style="font-size: 0.95rem; color: #151269; font-weight: 500;">${escapeHtml(row.REGION || 'N/A')}</div>
-          </div>
-        </div>
-
-        <div class="mb-3" style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.5rem; border-radius: 6px;">
-          <div style="flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: rgba(21, 18, 105, 0.1); border-radius: 6px;">
-            <i class="bi bi-building" style="color: #151269; font-size: 1rem;"></i>
-          </div>
-          <div style="flex: 1; min-width: 0;">
-            <div style="font-size: 0.7rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 0.25rem;">Province</div>
-            <div style="font-size: 0.95rem; color: #151269; font-weight: 500;">${escapeHtml(row.PROVINCE || 'N/A')}</div>
-          </div>
-        </div>
-
-        <!-- Coordinates Section -->
-        <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(21, 18, 105, 0.1);">
-          <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: rgba(21, 18, 105, 0.02); border-radius: 6px;">
-            <i class="bi bi-geo-alt" style="color: #6c757d; font-size: 0.9rem;"></i>
-            <div style="flex: 1;">
-              <div style="font-size: 0.7rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 0.15rem;">Coordinates</div>
-              <div style="font-size: 0.85rem; color: #495057; font-family: 'Courier New', monospace; font-weight: 500;">
-                ${lat.toFixed(6)}, ${lng.toFixed(6)}
-              </div>
-            </div>
+        
+        <!-- Coordinates -->
+        <div style="display: flex; align-items: center; gap: 0.75rem; padding-top: 0.25rem;">
+          <div style="flex-shrink: 0; color: #6c757d; font-size: 0.9rem; width: 70px; font-weight: 500;">Coordinates:</div>
+          <div style="flex: 1; color: #495057; font-family: 'Courier New', monospace; font-size: 0.85rem; font-weight: 500;">
+            ${lat.toFixed(6)}, ${lng.toFixed(6)}
           </div>
         </div>
       </div>

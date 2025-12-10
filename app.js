@@ -720,10 +720,91 @@ async function loadFMAMunicipalities() {
     let currentPage = 1;
     let itemsPerPage = 20;
 
+    // Function to update region filter based on selected FMA
+    function updateRegionFilter() {
+      const selectedFMA = fmaSelect?.value || '';
+      const selectedRegion = regionSelect?.value || '';
+      
+      // Get available regions based on selected FMA
+      let availableRegions = regions;
+      if (selectedFMA) {
+        availableRegions = [...new Set(
+          data
+            .filter(r => r.FMA === selectedFMA)
+            .map(r => r.REGION)
+            .filter(Boolean)
+        )].sort();
+      }
+      
+      // Update region dropdown
+      if (regionSelect) {
+        const currentValue = regionSelect.value;
+        regionSelect.innerHTML = '<option value="">All Regions</option>';
+        availableRegions.forEach(region => {
+          const opt = document.createElement('option');
+          opt.value = region;
+          opt.textContent = region;
+          regionSelect.appendChild(opt);
+        });
+        
+        // Restore selection if it's still valid
+        if (selectedRegion && availableRegions.includes(selectedRegion)) {
+          regionSelect.value = selectedRegion;
+        } else {
+          regionSelect.value = '';
+          // Clear province filter if region is cleared
+          if (provinceSelect) {
+            provinceSelect.innerHTML = '<option value="">All Provinces (select region first)</option>';
+            provinceSelect.disabled = true;
+          }
+        }
+      }
+    }
+    
+    // Function to update FMA filter based on selected region
+    function updateFMAFilter() {
+      const selectedRegion = regionSelect?.value || '';
+      const selectedFMA = fmaSelect?.value || '';
+      
+      // Get available FMAs based on selected region
+      let availableFMAs = fmas;
+      if (selectedRegion) {
+        availableFMAs = [...new Set(
+          data
+            .filter(r => r.REGION === selectedRegion)
+            .map(r => r.FMA)
+            .filter(Boolean)
+        )].sort();
+      }
+      
+      // Update FMA dropdown
+      if (fmaSelect) {
+        const currentValue = fmaSelect.value;
+        fmaSelect.innerHTML = '<option value="">All FMAs</option>';
+        availableFMAs.forEach(fma => {
+          const opt = document.createElement('option');
+          opt.value = fma;
+          opt.textContent = formatFMA(fma);
+          fmaSelect.appendChild(opt);
+        });
+        
+        // Restore selection if it's still valid
+        if (selectedFMA && availableFMAs.includes(selectedFMA)) {
+          fmaSelect.value = selectedFMA;
+        } else {
+          fmaSelect.value = '';
+        }
+      }
+    }
+
     // Populate provinces when region changes
     if (regionSelect) {
       regionSelect.addEventListener('change', () => {
         const selectedRegion = regionSelect.value;
+        
+        // Update FMA filter based on selected region
+        updateFMAFilter();
+        
         if (provinceSelect) {
           provinceSelect.innerHTML = '<option value="">All Provinces</option>';
           provinceSelect.disabled = !selectedRegion;
@@ -751,6 +832,8 @@ async function loadFMAMunicipalities() {
 
     if (fmaSelect) {
       fmaSelect.addEventListener('change', () => {
+        // Update region filter based on selected FMA
+        updateRegionFilter();
         currentPage = 1; // Reset to first page on filter change
         renderTable();
       });

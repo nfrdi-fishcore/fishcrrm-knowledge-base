@@ -2874,11 +2874,54 @@ async function loadFMAMunicipalitiesMap() {
     toggleButton.style.display = 'none';
   }
 
+  // Function to update button positions based on filter pane visibility
+  function updateFMAButtonPositions() {
+    const legendButton = document.getElementById('toggle-fma-legend');
+    const downloadButton = document.getElementById('download-fma-map-screenshot');
+    const filterSidebar = document.getElementById('fma-municipalities-filter-sidebar');
+    
+    if (!legendButton || !downloadButton) return;
+    
+    const buttonHeight = 44;
+    const buttonSpacing = 15;
+    const filterButtonTop = 20;
+    const filterButtonHeight = 44;
+    
+    if (filterSidebar && filterSidebar.classList.contains('show')) {
+      // Filter pane is shown - position buttons below it
+      const filterPane = filterSidebar.querySelector('.glass-panel');
+      if (filterPane) {
+        const filterPaneHeight = filterPane.offsetHeight;
+        const filterPaneTop = 20; // Filter sidebar top position
+        const buttonsTop = filterPaneTop + filterPaneHeight + 15; // 15px spacing below filter pane
+        
+        legendButton.style.top = `${buttonsTop}px`;
+        downloadButton.style.top = `${buttonsTop + buttonHeight + buttonSpacing}px`;
+      }
+    } else {
+      // Filter pane is hidden - position buttons below Filter toggle button
+      const buttonsTop = filterButtonTop + filterButtonHeight + buttonSpacing;
+      legendButton.style.top = `${buttonsTop}px`;
+      downloadButton.style.top = `${buttonsTop + buttonHeight + buttonSpacing}px`;
+    }
+  }
+
   // Set up filter sidebar toggle functionality
   if (toggleButton && filterSidebar) {
     toggleButton.addEventListener('click', () => {
       filterSidebar.classList.add('show');
       toggleButton.style.display = 'none';
+      // Hide legend when filter is shown
+      if (legendPanel) {
+        legendPanel.classList.remove('show');
+      }
+      if (toggleLegendButton) {
+        toggleLegendButton.style.display = 'flex';
+      }
+      // Update button positions after filter pane is shown
+      setTimeout(() => {
+        updateFMAButtonPositions();
+      }, 350); // Wait for animation to complete
     });
   }
 
@@ -2886,6 +2929,8 @@ async function loadFMAMunicipalitiesMap() {
     closeButton.addEventListener('click', () => {
       filterSidebar.classList.remove('show');
       toggleButton.style.display = 'flex';
+      // Update button positions after filter pane is hidden
+      updateFMAButtonPositions();
     });
   }
 
@@ -2894,6 +2939,15 @@ async function loadFMAMunicipalitiesMap() {
     toggleLegendButton.addEventListener('click', () => {
       legendPanel.classList.add('show');
       toggleLegendButton.style.display = 'none';
+      // Hide filter when legend is shown
+      if (filterSidebar) {
+        filterSidebar.classList.remove('show');
+      }
+      if (toggleButton) {
+        toggleButton.style.display = 'flex';
+      }
+      // Update button positions when filter is hidden
+      updateFMAButtonPositions();
     });
   }
 
@@ -2903,6 +2957,16 @@ async function loadFMAMunicipalitiesMap() {
       toggleLegendButton.style.display = 'flex';
     });
   }
+  
+  // Initial button position update - delay to ensure filter pane is rendered
+  setTimeout(() => {
+    updateFMAButtonPositions();
+  }, 100);
+  
+  // Update button positions on window resize
+  window.addEventListener('resize', () => {
+    updateFMAButtonPositions();
+  });
 
   // Set up download screenshot functionality
   if (downloadButton) {

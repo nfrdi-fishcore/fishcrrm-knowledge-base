@@ -2422,11 +2422,33 @@ window.fmaMunicipalitiesMap = null;
 window.fmaCurrentTileLayer = null;
 window.fmaColorMap = {}; // Map FMA IDs to colors
 
+// Normalize FMA ID to ensure consistent matching
+function normalizeFMAId(fmaId) {
+  if (!fmaId) return '';
+  // Convert to string and trim
+  let normalized = String(fmaId).trim();
+  // Remove "FMA" prefix if present and normalize spacing
+  normalized = normalized.replace(/^FMA\s*/i, '').trim();
+  // Pad single digits with leading zero (e.g., "1" -> "01", "10" -> "10")
+  if (/^\d+$/.test(normalized)) {
+    normalized = normalized.padStart(2, '0');
+  }
+  return normalized;
+}
+
 // Get color for an FMA (assigns consistent colors)
 function getFMAColor(fmaId) {
   if (!fmaId) return '#6c757d'; // Default gray
   
-  // If color already assigned, return it
+  // Normalize the FMA ID for consistent matching
+  const normalizedId = normalizeFMAId(fmaId);
+  
+  // Try to find color with normalized ID first
+  if (window.fmaColorMap[normalizedId]) {
+    return window.fmaColorMap[normalizedId];
+  }
+  
+  // Also try the original ID in case it's already normalized
   if (window.fmaColorMap[fmaId]) {
     return window.fmaColorMap[fmaId];
   }
@@ -2450,16 +2472,25 @@ function getFMAColor(fmaId) {
     '#3F51B5'  // Indigo
   ];
   
-  // Get all unique FMAs and assign colors
+  // If color map is empty, initialize it (shouldn't happen if loadFMAMunicipalitiesMap is called first)
   if (Object.keys(window.fmaColorMap).length === 0 && window.fmaMunicipalitiesData.length > 0) {
-    const uniqueFMAs = [...new Set(window.fmaMunicipalitiesData.map(r => r.FMA_ID).filter(Boolean))].sort();
+    const uniqueFMAs = [...new Set(window.fmaMunicipalitiesData.map(r => {
+      const id = r.FMA_ID || r.FMA || '';
+      return normalizeFMAId(id);
+    }).filter(Boolean))].sort();
+    
+    console.log('Initializing color map with FMAs:', uniqueFMAs);
     uniqueFMAs.forEach((fma, index) => {
       window.fmaColorMap[fma] = colors[index % colors.length];
     });
   }
   
-  // Return color for this FMA or default
-  return window.fmaColorMap[fmaId] || colors[0];
+  // Return color for this FMA or default (should not happen if initialized correctly)
+  const color = window.fmaColorMap[normalizedId] || window.fmaColorMap[fmaId] || colors[0];
+  if (color === colors[0] && normalizedId) {
+    console.warn(`FMA color not found for: "${fmaId}" (normalized: "${normalizedId}"). Available keys:`, Object.keys(window.fmaColorMap));
+  }
+  return color;
 }
 
 // Create a marker for an FMA municipality
@@ -2469,11 +2500,21 @@ function createFMAMunicipalityMarker(row, L) {
 
   if (isNaN(lat) || isNaN(lng)) return null;
 
-  const fmaId = row.FMA_ID || 'N/A';
+  const originalFmaId = row.FMA_ID || row.FMA || 'N/A';
+  const fmaId = normalizeFMAId(originalFmaId) || originalFmaId;
   const color = getFMAColor(fmaId);
   const formatFMA = (fma) => {
     if (!fma) return '-';
-    return fma.toUpperCase().startsWith('FMA') ? fma : `FMA ${fma}`;
+    // If it's already a number like "01", format as "FMA 01"
+    if (/^\d+$/.test(fma)) {
+      return `FMA ${fma}`;
+    }
+    // If it already starts with FMA, return as is
+    if (fma.toUpperCase().startsWith('FMA')) {
+      return fma;
+    }
+    // Otherwise add FMA prefix
+    return `FMA ${fma}`;
   };
   
   const popupContent = `
@@ -2521,7 +2562,11 @@ function filterFMAMunicipalitiesMarkers() {
 
   // Filter data based on selected filters
   const filteredData = window.fmaMunicipalitiesData.filter(row => {
-    if (fmaFilter && row.FMA_ID !== fmaFilter) return false;
+    if (fmaFilter) {
+      const rowFmaId = normalizeFMAId(row.FMA_ID || row.FMA || '');
+      const filterFmaId = normalizeFMAId(fmaFilter);
+      if (rowFmaId !== filterFmaId) return false;
+    }
     if (regionFilter && row.REGION !== regionFilter) return false;
     if (provinceFilter && row.PROVINCE !== provinceFilter) return false;
     const municipality = (row.MUNICIPALITY || '').toLowerCase();
@@ -2562,20 +2607,33 @@ function updateFMALegend() {
   const legendContent = document.getElementById('fma-legend-content');
   if (!legendContent) return;
 
-  // Get unique FMAs with their colors
-  const fmas = [...new Set(window.fmaMunicipalitiesData.map(r => r.FMA_ID).filter(Boolean))].sort();
+  // Get unique FMAs with their colors (use normalized IDs)
+  const fmas = [...new Set(window.fmaMunicipalitiesData.map(r => {
+    const id = r.FMA_ID || r.FMA || '';
+    return normalizeFMAId(id);
+  }).filter(Boolean))].sort();
   
   if (fmas.length === 0) {
     legendContent.innerHTML = '<p class="text-muted small mb-0">No FMA data available</p>';
     return;
   }
 
+  const formatFMA = (fma) => {
+    if (!fma) return '-';
+    // If it's already a number like "01", format as "FMA 01"
+    if (/^\d+$/.test(fma)) {
+      return `FMA ${fma}`;
+    }
+    // If it already starts with FMA, return as is
+    if (fma.toUpperCase().startsWith('FMA')) {
+      return fma;
+    }
+    // Otherwise add FMA prefix
+    return `FMA ${fma}`;
+  };
+  
   const legendHTML = fmas.map(fma => {
     const color = getFMAColor(fma);
-    const formatFMA = (fma) => {
-      if (!fma) return '-';
-      return fma.toUpperCase().startsWith('FMA') ? fma : `FMA ${fma}`;
-    };
     
     return `
       <div class="d-flex align-items-center mb-2">
@@ -2712,22 +2770,43 @@ async function loadFMAMunicipalitiesMap() {
     // Store valid data globally
     window.fmaMunicipalitiesData = validData;
 
-    // Initialize color map
-    const uniqueFMAs = [...new Set(validData.map(r => r.FMA_ID).filter(Boolean))].sort();
+    // Clear and initialize color map with normalized FMA IDs
+    window.fmaColorMap = {};
+    const uniqueFMAs = [...new Set(validData.map(r => {
+      const id = r.FMA_ID || r.FMA || '';
+      return normalizeFMAId(id);
+    }).filter(Boolean))].sort();
+    
     const colors = [
       '#2066A8', '#E74C3C', '#27AE60', '#F39C12', '#9B59B6',
       '#1ABC9C', '#E67E22', '#3498DB', '#E91E63', '#00BCD4',
       '#FF9800', '#795548', '#607D8B', '#9C27B0', '#3F51B5'
     ];
+    
+    console.log('Initializing FMA color map. Unique FMAs found:', uniqueFMAs);
     uniqueFMAs.forEach((fma, index) => {
       window.fmaColorMap[fma] = colors[index % colors.length];
+      console.log(`FMA ${fma}: ${colors[index % colors.length]}`);
+    });
+    
+    // Also map original FMA_ID values to colors for backward compatibility
+    validData.forEach(row => {
+      const originalId = row.FMA_ID || row.FMA || '';
+      const normalizedId = normalizeFMAId(originalId);
+      if (originalId && normalizedId && window.fmaColorMap[normalizedId]) {
+        // Map both original and normalized to same color
+        window.fmaColorMap[originalId] = window.fmaColorMap[normalizedId];
+      }
     });
 
     // Update legend
     updateFMALegend();
 
     // Populate filter dropdowns
-    const fmas = [...new Set(validData.map(r => r.FMA).filter(Boolean))].sort();
+    const fmas = [...new Set(validData.map(r => {
+      const id = r.FMA_ID || r.FMA || '';
+      return normalizeFMAId(id);
+    }).filter(Boolean))].sort();
     const regions = [...new Set(validData.map(r => r.REGION).filter(Boolean))].sort();
 
     const fmaSelect = document.getElementById('fma-map-filter-fma');
@@ -2737,7 +2816,16 @@ async function loadFMAMunicipalitiesMap() {
     if (fmaSelect) {
       const formatFMA = (fma) => {
         if (!fma) return '-';
-        return fma.toUpperCase().startsWith('FMA') ? fma : `FMA ${fma}`;
+        // If it's already a number like "01", format as "FMA 01"
+        if (/^\d+$/.test(fma)) {
+          return `FMA ${fma}`;
+        }
+        // If it already starts with FMA, return as is
+        if (fma.toUpperCase().startsWith('FMA')) {
+          return fma;
+        }
+        // Otherwise add FMA prefix
+        return `FMA ${fma}`;
       };
       fmaSelect.innerHTML = '<option value="">All FMAs</option>' + 
         fmas.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(formatFMA(f))}</option>`).join('');

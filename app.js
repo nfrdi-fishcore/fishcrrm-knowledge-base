@@ -3078,12 +3078,9 @@ async function loadFMAMunicipalitiesMap() {
           regionSelect.value = selectedRegion;
         } else {
           regionSelect.value = '';
-          // Clear province filter if region is cleared
-          if (provinceSelect) {
-            provinceSelect.innerHTML = '<option value="">All Provinces (select region first)</option>';
-            provinceSelect.disabled = true;
-          }
         }
+        // Update province filter when region changes
+        updateMapProvinceFilter();
       }
     }
     
@@ -3136,44 +3133,82 @@ async function loadFMAMunicipalitiesMap() {
             fmaSelect.value = '';
           }
         }
+        // Update province filter when FMA changes
+        updateMapProvinceFilter();
+      }
+    }
+    
+    // Function to update province filter based on selected FMA and Region (for map)
+    function updateMapProvinceFilter() {
+      const selectedFMA = fmaSelect?.value || '';
+      const selectedRegion = regionSelect?.value || '';
+      const selectedProvince = provinceSelect?.value || '';
+      
+      // Get available provinces based on selected FMA and/or Region
+      let filteredData = validData;
+      
+      // Filter by FMA if selected
+      if (selectedFMA) {
+        filteredData = filteredData.filter(r => {
+          const rFmaId = normalizeFMAId(r.FMA_ID || r.FMA || '');
+          const filterFmaId = normalizeFMAId(selectedFMA);
+          return rFmaId === filterFmaId;
+        });
+      }
+      
+      // Filter by Region if selected
+      if (selectedRegion) {
+        filteredData = filteredData.filter(r => r.REGION === selectedRegion);
+      }
+      
+      // Get unique provinces from filtered data
+      const availableProvinces = [...new Set(
+        filteredData
+          .map(r => r.PROVINCE)
+          .filter(Boolean)
+      )].sort();
+      
+      // Update province dropdown
+      if (provinceSelect) {
+        provinceSelect.innerHTML = '<option value="">All Provinces</option>';
+        availableProvinces.forEach(prov => {
+          const opt = document.createElement('option');
+          opt.value = prov;
+          opt.textContent = prov;
+          provinceSelect.appendChild(opt);
+        });
+        
+        // Restore selection if it's still valid
+        if (selectedProvince && availableProvinces.includes(selectedProvince)) {
+          provinceSelect.value = selectedProvince;
+        } else {
+          provinceSelect.value = '';
+        }
+        
+        // Enable/disable based on whether we have any filters
+        provinceSelect.disabled = !selectedFMA && !selectedRegion;
+        if (provinceSelect.disabled) {
+          provinceSelect.innerHTML = '<option value="">All Provinces (select FMA or Region first)</option>';
+        }
       }
     }
 
-    // Handle FMA change to update region filter
+    // Handle FMA change to update region and province filters
     if (fmaSelect) {
       fmaSelect.addEventListener('change', () => {
         updateMapRegionFilter();
+        updateMapProvinceFilter();
         filterFMAMunicipalitiesMarkers();
       });
     }
 
-    // Handle region change to populate provinces and update FMA filter
+    // Handle region change to update FMA and province filters
     if (regionSelect && provinceSelect) {
       regionSelect.addEventListener('change', () => {
-        const selectedRegion = regionSelect.value;
-        
         // Update FMA filter based on selected region
         updateMapFMAFilter();
-        
-        provinceSelect.innerHTML = '<option value="">All Provinces</option>';
-        provinceSelect.disabled = !selectedRegion;
-
-        if (selectedRegion) {
-          const provinces = [...new Set(
-            validData
-              .filter(r => r.REGION === selectedRegion)
-              .map(r => r.PROVINCE)
-              .filter(Boolean)
-          )].sort();
-          
-          provinces.forEach(prov => {
-            const opt = document.createElement('option');
-            opt.value = prov;
-            opt.textContent = prov;
-            provinceSelect.appendChild(opt);
-          });
-        }
-
+        // Update province filter based on selected FMA and Region
+        updateMapProvinceFilter();
         filterFMAMunicipalitiesMarkers();
       });
     }
@@ -3203,11 +3238,13 @@ async function loadFMAMunicipalitiesMap() {
           }
         });
         if (provinceSelect) {
-          provinceSelect.innerHTML = '<option value="">All Provinces (select region first)</option>';
+          provinceSelect.innerHTML = '<option value="">All Provinces (select FMA or Region first)</option>';
+          provinceSelect.disabled = true;
         }
-        // Reset both filters to show all options
+        // Reset all filters to show all options
         updateMapRegionFilter();
         updateMapFMAFilter();
+        updateMapProvinceFilter();
         filterFMAMunicipalitiesMarkers();
       });
     }

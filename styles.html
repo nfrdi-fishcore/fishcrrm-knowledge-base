@@ -1745,10 +1745,10 @@
     pointer-events: auto;
   }
 
-  /* Legend panel animation (slides in from left) */
+  /* Legend panel animation (slides in from right) */
   #fma-legend-panel.landing-centers-filter-sidebar.show {
-    left: 20px !important;
-    right: auto !important;
+    left: auto !important;
+    right: 20px !important;
     pointer-events: auto;
   }
 
@@ -1935,7 +1935,15 @@
   .landing-centers-filter-toggle:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 28px rgba(21, 18, 105, 0.5), 0 4px 12px rgba(0, 0, 0, 0.2);
-    background: linear-gradient(135deg, #0f1056 0%, #151269 100%);
+    background: linear-gradient(135deg, #0f1056 0%, #151269 100%) !important;
+    color: white !important;
+  }
+  
+  /* Keep white color on hover for filter and legend buttons */
+  #toggle-fma-filter-sidebar:hover,
+  #toggle-fma-legend:hover {
+    background: linear-gradient(135deg, #151269 0%, #0f1056 100%) !important;
+    color: white !important;
   }
 
   .landing-centers-filter-toggle:hover i {

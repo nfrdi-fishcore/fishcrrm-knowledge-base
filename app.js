@@ -2559,23 +2559,17 @@ function createFMAMunicipalityMarker(row, L) {
     </div>
   `;
 
-  // Create custom marker with FMA-specific color using crosshair icon
-  // Using SVG to ensure the crosshair icon displays correctly
+  // Create custom marker with FMA-specific color using pin-map icon
   const iconHtml = `
-    <div style="width: 24px; height: 24px; position: relative; display: flex; align-items: center; justify-content: center;">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: ${color};">
-        <path d="M12 2V6M12 18V22M2 12H6M18 12H22" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="12" cy="12" r="3" stroke="${color}" stroke-width="2" fill="none"/>
-      </svg>
-    </div>
+    <i class="bi bi-pin-map-fill" style="color: ${color}; font-size: 24px; display: block; text-align: center;"></i>
   `;
 
   const customIcon = L.divIcon({
     html: iconHtml,
     className: 'custom-marker-icon',
     iconSize: [24, 24],
-    iconAnchor: [12, 12],
-    popupAnchor: [0, -12]
+    iconAnchor: [12, 24],
+    popupAnchor: [0, -24]
   });
 
   return L.marker([lat, lng], {
@@ -2669,12 +2663,7 @@ function updateFMALegend() {
     
     return `
       <div class="d-flex align-items-center mb-2">
-        <div style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; margin-right: 0.5rem;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2V6M12 18V22M2 12H6M18 12H22" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="12" cy="12" r="3" stroke="${color}" stroke-width="2" fill="none"/>
-          </svg>
-        </div>
+        <i class="bi bi-pin-map-fill me-2" style="color: ${color}; font-size: 20px;"></i>
         <span class="small fw-semibold" style="color: #151269;">${escapeHtml(formatFMA(fma))}</span>
       </div>
     `;

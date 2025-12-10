@@ -2102,7 +2102,11 @@ function filterLandingCentersMarkers() {
 
   // Filter data based on selected filters
   const filteredData = window.landingCentersData.filter(row => {
-    if (fmaFilter && row.FMA !== fmaFilter) return false;
+    if (fmaFilter) {
+      const rowFmaId = normalizeFMAId(row.FMA || '');
+      const filterFmaId = normalizeFMAId(fmaFilter);
+      if (rowFmaId !== filterFmaId) return false;
+    }
     if (regionFilter && row.REGION !== regionFilter) return false;
     if (provinceFilter && row.PROVINCE !== provinceFilter) return false;
     if (fishingGroundFilter && row.FISHING_GROUND !== fishingGroundFilter) return false;
@@ -2151,27 +2155,83 @@ function createLandingCenterMarker(row, L) {
 
   if (isNaN(lat) || isNaN(lng)) return null;
 
+  // Get FMA color using the same function as FMA Municipalities map
+  const originalFmaId = row.FMA || 'N/A';
+  const fmaId = normalizeFMAId(originalFmaId) || originalFmaId;
+  const color = getFMAColor(fmaId);
+  
+  const formatFMA = (fma) => {
+    if (!fma) return '-';
+    // If it's already a number like "01", format as "FMA 01"
+    if (/^\d+$/.test(fma)) {
+      return `FMA ${fma}`;
+    }
+    // If it already starts with FMA, return as is
+    if (fma.toUpperCase().startsWith('FMA')) {
+      return fma;
+    }
+    // Otherwise add FMA prefix
+    return `FMA ${fma}`;
+  };
+
+  const landingCenter = row.LANDING_CENTER || 'N/A';
+  
+  // Update popup to match FMA Municipalities map style but keep all details
   const popupContent = `
-    <div style="min-width: 200px;">
-      <h6 class="fw-bold mb-2" style="color: #151269;">${escapeHtml(row.LANDING_CENTER || 'N/A')}</h6>
-      <div class="small">
-        <div class="mb-1"><strong>Region:</strong> ${escapeHtml(row.REGION || 'N/A')}</div>
-        <div class="mb-1"><strong>Province:</strong> ${escapeHtml(row.PROVINCE || 'N/A')}</div>
-        <div class="mb-1"><strong>City/Municipality:</strong> ${escapeHtml(row.CITY_MUN || 'N/A')}</div>
-        <div class="mb-1"><strong>Fishing Ground:</strong> ${escapeHtml(row.FISHING_GROUND || 'N/A')}</div>
-        <div class="mb-1"><strong>FMA:</strong> ${escapeHtml(row.FMA || 'N/A')}</div>
-        <div class="mt-2 pt-2 border-top">
-          <small class="text-muted">
-            <i class="bi bi-geo-alt"></i> ${lat.toFixed(6)}, ${lng.toFixed(6)}
-          </small>
+    <div style="min-width: 240px; max-width: 280px; font-family: 'Outfit', sans-serif;">
+      <!-- Landing Center Name -->
+      <div style="margin-bottom: 1rem;">
+        <h6 class="fw-bold mb-0" style="color: #151269; font-size: 1.1rem; line-height: 1.4;">${escapeHtml(landingCenter)}</h6>
+      </div>
+      
+      <!-- Details List -->
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <!-- Region -->
+        <div style="display: flex; align-items: center; gap: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(21, 18, 105, 0.1);">
+          <div style="flex-shrink: 0; color: #6c757d; font-size: 0.9rem; width: 70px; font-weight: 500;">Region:</div>
+          <div style="flex: 1; color: #151269; font-weight: 500; font-size: 0.95rem;">${escapeHtml(row.REGION || 'N/A')}</div>
+        </div>
+        
+        <!-- Province -->
+        <div style="display: flex; align-items: center; gap: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(21, 18, 105, 0.1);">
+          <div style="flex-shrink: 0; color: #6c757d; font-size: 0.9rem; width: 70px; font-weight: 500;">Province:</div>
+          <div style="flex: 1; color: #151269; font-weight: 500; font-size: 0.95rem;">${escapeHtml(row.PROVINCE || 'N/A')}</div>
+        </div>
+        
+        <!-- City/Municipality -->
+        <div style="display: flex; align-items: center; gap: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(21, 18, 105, 0.1);">
+          <div style="flex-shrink: 0; color: #6c757d; font-size: 0.9rem; width: 70px; font-weight: 500;">City/Mun:</div>
+          <div style="flex: 1; color: #151269; font-weight: 500; font-size: 0.95rem;">${escapeHtml(row.CITY_MUN || 'N/A')}</div>
+        </div>
+        
+        <!-- Fishing Ground -->
+        <div style="display: flex; align-items: center; gap: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(21, 18, 105, 0.1);">
+          <div style="flex-shrink: 0; color: #6c757d; font-size: 0.9rem; width: 70px; font-weight: 500;">Fishing Ground:</div>
+          <div style="flex: 1; color: #151269; font-weight: 500; font-size: 0.95rem;">${escapeHtml(row.FISHING_GROUND || 'N/A')}</div>
+        </div>
+        
+        <!-- FMA -->
+        <div style="display: flex; align-items: center; gap: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(21, 18, 105, 0.1);">
+          <div style="flex-shrink: 0; color: #6c757d; font-size: 0.9rem; width: 70px; font-weight: 500;">FMA:</div>
+          <div style="flex: 1;">
+            <span class="badge rounded-pill px-2.5 py-1" style="background: ${color}; color: white; font-size: 0.85rem; font-weight: 600;">${escapeHtml(formatFMA(fmaId))}</span>
+          </div>
+        </div>
+        
+        <!-- Coordinates -->
+        <div style="display: flex; align-items: center; gap: 0.75rem; padding-top: 0.25rem;">
+          <div style="flex-shrink: 0; color: #6c757d; font-size: 0.9rem; width: 70px; font-weight: 500;">Coordinates:</div>
+          <div style="flex: 1; color: #495057; font-family: 'Courier New', monospace; font-size: 0.85rem; font-weight: 500;">
+            ${lat.toFixed(6)}, ${lng.toFixed(6)}
+          </div>
         </div>
       </div>
     </div>
   `;
 
-  // Create custom marker with Bootstrap icon (just the icon, no badge)
+  // Create custom marker with FMA-specific color using geo-alt-fill icon (same as FMA Municipalities map)
   const iconHtml = `
-    <i class="bi bi-crosshair2" style="color: #2066A8; font-size: 24px;"></i>
+    <i class="bi bi-geo-alt-fill" style="color: ${color}; font-size: 24px; display: block; text-align: center;"></i>
   `;
 
   const customIcon = L.divIcon({
@@ -2518,8 +2578,29 @@ async function loadLandingCenters() {
       }
     }, 100);
 
+    // Initialize FMA color map for landing centers (use same colors as FMA Municipalities)
+    if (Object.keys(window.fmaColorMap).length === 0) {
+      const uniqueFMAs = [...new Set(validData.map(r => {
+        const id = r.FMA || '';
+        return normalizeFMAId(id);
+      }).filter(Boolean))].sort();
+      
+      const colors = [
+        '#2066A8', '#E74C3C', '#27AE60', '#F39C12', '#9B59B6', '#1ABC9C',
+        '#E67E22', '#3498DB', '#E91E63', '#00BCD4', '#FF9800', '#795548',
+        '#607D8B', '#9C27B0', '#3F51B5'
+      ];
+      
+      uniqueFMAs.forEach((fma, index) => {
+        window.fmaColorMap[fma] = colors[index % colors.length];
+      });
+    }
+
     // Initial load - add all markers
     filterLandingCentersMarkers();
+
+    // Set up legend, screenshot, and button positioning
+    setupLandingCentersMapFeatures();
 
     console.log(`Successfully loaded ${window.allLandingCentersMarkers.length} landing centers on map`);
 
@@ -2528,6 +2609,369 @@ async function loadLandingCenters() {
     loadingEl.style.display = 'none';
     errorEl.classList.remove('d-none');
     errorMessageEl.textContent = err.message || 'Failed to load landing centers data. Please try again later.';
+  }
+}
+
+// Set up legend, screenshot, and button positioning for Landing Centers map
+function setupLandingCentersMapFeatures() {
+  const filterSidebar = document.getElementById('landing-centers-filter-sidebar');
+  const toggleButton = document.getElementById('toggle-filter-sidebar');
+  const closeButton = document.getElementById('close-filter-sidebar');
+  const legendPanel = document.getElementById('legend-panel');
+  const toggleLegendButton = document.getElementById('toggle-legend');
+  const closeLegendButton = document.getElementById('close-legend');
+  const downloadButton = document.getElementById('download-map-screenshot');
+  const infoPanel = document.getElementById('map-info');
+
+  // Function to set uniform button widths
+  function setUniformButtonWidths() {
+    const filterButton = document.getElementById('toggle-filter-sidebar');
+    const legendButton = document.getElementById('toggle-legend');
+    const downloadButton = document.getElementById('download-map-screenshot');
+    
+    if (!filterButton || !legendButton || !downloadButton) return;
+    
+    // Temporarily show all buttons to measure their widths
+    const originalDisplays = {
+      filter: filterButton.style.display,
+      legend: legendButton.style.display,
+      download: downloadButton.style.display
+    };
+    
+    filterButton.style.display = 'flex';
+    legendButton.style.display = 'flex';
+    downloadButton.style.display = 'flex';
+    
+    // Get the widest button width
+    const filterWidth = filterButton.offsetWidth;
+    const legendWidth = legendButton.offsetWidth;
+    const downloadWidth = downloadButton.offsetWidth;
+    const maxWidth = Math.max(filterWidth, legendWidth, downloadWidth);
+    
+    // Set all buttons to the widest width
+    filterButton.style.width = `${maxWidth}px`;
+    legendButton.style.width = `${maxWidth}px`;
+    downloadButton.style.width = `${maxWidth}px`;
+    
+    // Restore original display states
+    filterButton.style.display = originalDisplays.filter;
+    legendButton.style.display = originalDisplays.legend;
+    downloadButton.style.display = originalDisplays.download;
+  }
+
+  // Function to update button positions and legend panel position
+  function updateLandingCentersButtonPositions() {
+    const legendButton = document.getElementById('toggle-legend');
+    const downloadButton = document.getElementById('download-map-screenshot');
+    const filterSidebar = document.getElementById('landing-centers-filter-sidebar');
+    const legendPanel = document.getElementById('legend-panel');
+    const filterToggleButton = document.getElementById('toggle-filter-sidebar');
+    
+    if (!legendButton || !downloadButton) return;
+    
+    const buttonHeight = 44;
+    const buttonSpacing = 15;
+    const filterButtonTop = 20;
+    const filterButtonHeight = 44;
+    const rightMargin = 20;
+    
+    let legendButtonTop, downloadButtonTop;
+    let legendPanelTop;
+    
+    // Check if legend panel is shown
+    const isLegendShown = legendPanel && legendPanel.classList.contains('show');
+    const isFilterShown = filterSidebar && filterSidebar.classList.contains('show');
+    
+    // Calculate button positions
+    if (isFilterShown) {
+      // Filter pane is shown - position buttons below it
+      const filterPane = filterSidebar.querySelector('.glass-panel');
+      if (filterPane) {
+        const filterPaneHeight = filterPane.offsetHeight;
+        const filterPaneTop = 20;
+        const buttonsTop = filterPaneTop + filterPaneHeight + 15;
+        
+        legendButtonTop = buttonsTop;
+        legendButton.style.top = `${legendButtonTop}px`;
+        
+        if (isLegendShown) {
+          legendPanelTop = filterButtonTop + filterButtonHeight + buttonSpacing;
+          legendPanel.style.top = `${legendPanelTop}px`;
+          legendPanel.style.maxHeight = 'none';
+          legendPanel.style.overflowY = 'visible';
+          
+          requestAnimationFrame(() => {
+            const legendPanelHeight = legendPanel.offsetHeight || legendPanel.scrollHeight;
+            downloadButtonTop = legendPanelTop + legendPanelHeight + buttonSpacing;
+            downloadButton.style.top = `${downloadButtonTop}px`;
+            updateInfoPanelPosition();
+          });
+        } else {
+          downloadButtonTop = legendButtonTop + buttonHeight + buttonSpacing;
+          downloadButton.style.top = `${downloadButtonTop}px`;
+          updateInfoPanelPosition();
+        }
+      }
+    } else {
+      // Filter pane is hidden - position buttons below Filter toggle button
+      legendButtonTop = filterButtonTop + filterButtonHeight + buttonSpacing;
+      legendButton.style.top = `${legendButtonTop}px`;
+      
+      if (isLegendShown) {
+        legendPanelTop = filterButtonTop + filterButtonHeight + buttonSpacing;
+        legendPanel.style.top = `${legendPanelTop}px`;
+        legendPanel.style.maxHeight = 'none';
+        legendPanel.style.overflowY = 'visible';
+        
+        requestAnimationFrame(() => {
+          const legendPanelHeight = legendPanel.offsetHeight || legendPanel.scrollHeight;
+          downloadButtonTop = legendPanelTop + legendPanelHeight + buttonSpacing;
+          downloadButton.style.top = `${downloadButtonTop}px`;
+          updateInfoPanelPosition();
+        });
+      } else {
+        downloadButtonTop = legendButtonTop + buttonHeight + buttonSpacing;
+        downloadButton.style.top = `${downloadButtonTop}px`;
+        updateInfoPanelPosition();
+      }
+    }
+    
+    // Function to update info panel position
+    function updateInfoPanelPosition() {
+      if (!infoPanel) return;
+      
+      const spacing = 15;
+      let rightPosition = rightMargin;
+      
+      if (isFilterShown) {
+        const filterPane = filterSidebar.querySelector('.glass-panel');
+        if (filterPane) {
+          rightPosition += filterPane.offsetWidth + spacing;
+        }
+      }
+      
+      if (isLegendShown) {
+        const legendPane = legendPanel.querySelector('.glass-panel');
+        if (legendPane) {
+          rightPosition += legendPane.offsetWidth + spacing;
+        }
+      }
+      
+      if (filterToggleButton && filterToggleButton.style.display !== 'none') {
+        rightPosition += filterToggleButton.offsetWidth + spacing;
+      } else {
+        const visibleButtons = [legendButton, downloadButton].filter(btn => 
+          btn && btn.style.display !== 'none'
+        );
+        if (visibleButtons.length > 0) {
+          rightPosition += visibleButtons[0].offsetWidth + spacing;
+        }
+      }
+      
+      const isMobile = window.innerWidth <= 767.98;
+      if (isMobile) {
+        infoPanel.style.right = '10px';
+        infoPanel.style.left = '10px';
+        infoPanel.style.bottom = '20px';
+        infoPanel.style.top = 'auto';
+      } else {
+        infoPanel.style.right = `${rightPosition}px`;
+        infoPanel.style.left = 'auto';
+        infoPanel.style.bottom = 'auto';
+        infoPanel.style.top = '20px';
+      }
+    }
+    
+    setTimeout(() => {
+      updateInfoPanelPosition();
+    }, 50);
+  }
+
+  // Update Landing Centers legend
+  function updateLandingCentersLegend() {
+    const legendContent = document.getElementById('legend-content');
+    if (!legendContent) return;
+
+    // Get unique FMAs with their colors (use normalized IDs)
+    const fmas = [...new Set(window.landingCentersData.map(r => {
+      const id = r.FMA || '';
+      return normalizeFMAId(id);
+    }).filter(Boolean))].sort();
+    
+    if (fmas.length === 0) {
+      legendContent.innerHTML = '<p class="text-muted small mb-0">No FMA data available</p>';
+      return;
+    }
+
+    const formatFMA = (fma) => {
+      if (!fma) return '-';
+      if (/^\d+$/.test(fma)) {
+        return `FMA ${fma}`;
+      }
+      if (fma.toUpperCase().startsWith('FMA')) {
+        return fma;
+      }
+      return `FMA ${fma}`;
+    };
+    
+    const legendHTML = fmas.map(fma => {
+      const color = getFMAColor(fma);
+      
+      return `
+        <div class="d-flex align-items-center mb-2">
+          <i class="bi bi-geo-alt-fill me-2" style="color: ${color}; font-size: 20px;"></i>
+          <span class="small fw-semibold" style="color: #151269;">${escapeHtml(formatFMA(fma))}</span>
+        </div>
+      `;
+    }).join('');
+
+    legendContent.innerHTML = legendHTML;
+  }
+
+  // Set uniform button widths initially
+  setUniformButtonWidths();
+  
+  // Set uniform button widths on window resize
+  window.addEventListener('resize', () => {
+    setUniformButtonWidths();
+    updateLandingCentersButtonPositions();
+  });
+
+  // Update filter sidebar toggle to hide legend
+  if (toggleButton && filterSidebar) {
+    const originalHandler = toggleButton.onclick;
+    toggleButton.addEventListener('click', () => {
+      filterSidebar.classList.add('show');
+      toggleButton.style.display = 'none';
+      if (legendPanel) {
+        legendPanel.classList.remove('show');
+      }
+      if (toggleLegendButton) {
+        toggleLegendButton.style.display = 'flex';
+      }
+      setTimeout(() => {
+        updateLandingCentersButtonPositions();
+      }, 350);
+    });
+  }
+
+  if (closeButton && filterSidebar && toggleButton) {
+    closeButton.addEventListener('click', () => {
+      filterSidebar.classList.remove('show');
+      toggleButton.style.display = 'flex';
+      updateLandingCentersButtonPositions();
+    });
+  }
+
+  // Set up legend toggle functionality
+  if (toggleLegendButton && legendPanel) {
+    toggleLegendButton.addEventListener('click', () => {
+      if (filterSidebar) {
+        filterSidebar.classList.remove('show');
+      }
+      if (toggleButton) {
+        toggleButton.style.display = 'flex';
+      }
+      updateLandingCentersButtonPositions();
+      setTimeout(() => {
+        legendPanel.classList.add('show');
+        toggleLegendButton.style.display = 'none';
+        setTimeout(() => {
+          updateLandingCentersButtonPositions();
+        }, 350);
+      }, 50);
+    });
+  }
+
+  if (closeLegendButton && legendPanel && toggleLegendButton) {
+    closeLegendButton.addEventListener('click', () => {
+      legendPanel.classList.remove('show');
+      legendPanel.style.maxHeight = '';
+      legendPanel.style.overflowY = '';
+      toggleLegendButton.style.display = 'flex';
+      updateLandingCentersButtonPositions();
+    });
+  }
+  
+  // Set uniform button widths after initial load
+  setTimeout(() => {
+    setUniformButtonWidths();
+    updateLandingCentersButtonPositions();
+  }, 100);
+  
+  // Initial button position update
+  setTimeout(() => {
+    updateLandingCentersButtonPositions();
+  }, 100);
+  
+  // Update button positions on window resize
+  window.addEventListener('resize', () => {
+    updateLandingCentersButtonPositions();
+  });
+
+  // Set up download screenshot functionality
+  if (downloadButton) {
+    downloadButton.addEventListener('click', async () => {
+      await downloadLandingCentersMapScreenshot();
+    });
+  }
+
+  // Update legend after markers are loaded
+  setTimeout(() => {
+    updateLandingCentersLegend();
+  }, 200);
+}
+
+// Download Landing Centers map screenshot
+async function downloadLandingCentersMapScreenshot() {
+  const mapContainer = document.getElementById('landing-centers-map');
+  if (!mapContainer) {
+    showToast('Map container not found', 'error');
+    return;
+  }
+
+  try {
+    // Load html2canvas library
+    await loadHtml2Canvas();
+    
+    const mapWrapper = document.querySelector('.landing-centers-map-wrapper');
+    if (!mapWrapper) {
+      showToast('Map wrapper not found', 'error');
+      return;
+    }
+
+    showToast('Capturing screenshot...', 'info');
+    
+    const canvas = await html2canvas(mapWrapper, {
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      scale: 1,
+      width: mapWrapper.offsetWidth,
+      height: mapWrapper.offsetHeight
+    });
+
+    // Convert canvas to blob and download
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        showToast('Failed to create screenshot', 'error');
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `landing-centers-map-${new Date().toISOString().split('T')[0]}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      showToast('Screenshot downloaded successfully', 'success');
+    }, 'image/png');
+  } catch (err) {
+    console.error('Failed to capture screenshot:', err);
+    showToast('Failed to capture screenshot: ' + (err.message || 'Unknown error'), 'error');
   }
 }
 

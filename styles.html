@@ -1746,14 +1746,16 @@
   }
 
   /* Legend panel animation (slides in from right) */
-  #fma-legend-panel.landing-centers-filter-sidebar.show {
+  #fma-legend-panel.landing-centers-filter-sidebar.show,
+  #legend-panel.landing-centers-filter-sidebar.show {
     left: auto !important;
     right: 20px !important;
     pointer-events: auto;
   }
   
   /* Allow legend panel to expand to full height when shown */
-  #fma-legend-panel.landing-centers-filter-sidebar.show .glass-panel {
+  #fma-legend-panel.landing-centers-filter-sidebar.show .glass-panel,
+  #legend-panel.landing-centers-filter-sidebar.show .glass-panel {
     max-height: none !important;
     overflow-y: visible !important;
   }

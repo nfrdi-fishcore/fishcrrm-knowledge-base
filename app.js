@@ -2892,21 +2892,13 @@ async function loadFMAMunicipalitiesMap() {
   // Set up legend toggle functionality
   if (toggleLegendButton && legendPanel) {
     toggleLegendButton.addEventListener('click', () => {
-      if (legendPanel.style.display === 'none' || !legendPanel.style.display) {
-        legendPanel.style.display = 'block';
-        legendPanel.classList.add('show');
-        toggleLegendButton.style.display = 'none';
-      } else {
-        legendPanel.style.display = 'none';
-        legendPanel.classList.remove('show');
-        toggleLegendButton.style.display = 'flex';
-      }
+      legendPanel.classList.add('show');
+      toggleLegendButton.style.display = 'none';
     });
   }
 
   if (closeLegendButton && legendPanel && toggleLegendButton) {
     closeLegendButton.addEventListener('click', () => {
-      legendPanel.style.display = 'none';
       legendPanel.classList.remove('show');
       toggleLegendButton.style.display = 'flex';
     });

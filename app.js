@@ -3070,13 +3070,51 @@ function loadHtml2Canvas() {
       return;
     }
 
-    // Load html2canvas library
+    // Check if script is already being loaded
+    if (document.querySelector('script[src*="html2canvas"]')) {
+      // Wait for it to load
+      const checkInterval = setInterval(() => {
+        if (window.html2canvas) {
+          clearInterval(checkInterval);
+          resolve(window.html2canvas);
+        }
+      }, 100);
+      
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        if (!window.html2canvas) {
+          reject(new Error('Timeout waiting for html2canvas to load'));
+        }
+      }, 10000);
+      return;
+    }
+
+    // Load html2canvas library from CDN
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
-    script.integrity = 'sha256-1nYv3Tf1P3l6l5K5v5q5K5v5q5K5v5q5K5v5q5K5v5q5K5';
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
     script.crossOrigin = 'anonymous';
-    script.onload = () => resolve(window.html2canvas);
-    script.onerror = () => reject(new Error('Failed to load html2canvas library'));
+    script.onload = () => {
+      if (window.html2canvas) {
+        resolve(window.html2canvas);
+      } else {
+        reject(new Error('html2canvas loaded but not available'));
+      }
+    };
+    script.onerror = () => {
+      // Try alternative CDN
+      const altScript = document.createElement('script');
+      altScript.src = 'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js';
+      altScript.crossOrigin = 'anonymous';
+      altScript.onload = () => {
+        if (window.html2canvas) {
+          resolve(window.html2canvas);
+        } else {
+          reject(new Error('html2canvas loaded but not available'));
+        }
+      };
+      altScript.onerror = () => reject(new Error('Failed to load html2canvas library from all sources'));
+      document.head.appendChild(altScript);
+    };
     document.head.appendChild(script);
   });
 }

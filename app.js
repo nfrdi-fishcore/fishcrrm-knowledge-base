@@ -2890,7 +2890,10 @@ async function loadFMAMunicipalitiesMap() {
     const filterButtonHeight = 44;
     
     let legendButtonTop, downloadButtonTop;
-    let legendPanelTop, legendPanelMaxHeight;
+    let legendPanelTop;
+    
+    // Check if legend panel is shown
+    const isLegendShown = legendPanel && legendPanel.classList.contains('show');
     
     if (filterSidebar && filterSidebar.classList.contains('show')) {
       // Filter pane is shown - position buttons below it
@@ -2901,32 +2904,54 @@ async function loadFMAMunicipalitiesMap() {
         const buttonsTop = filterPaneTop + filterPaneHeight + 15; // 15px spacing below filter pane
         
         legendButtonTop = buttonsTop;
-        downloadButtonTop = buttonsTop + buttonHeight + buttonSpacing;
-        
         legendButton.style.top = `${legendButtonTop}px`;
-        downloadButton.style.top = `${downloadButtonTop}px`;
         
-        // Position legend panel between Filter button (or filter pane bottom) and Download button
-        legendPanelTop = filterButtonTop + filterButtonHeight + buttonSpacing;
-        legendPanelMaxHeight = downloadButtonTop - legendPanelTop - buttonSpacing;
+        if (isLegendShown) {
+          // Legend panel is shown - position download button below legend panel
+          // First, ensure legend panel can expand to full height
+          legendPanelTop = filterButtonTop + filterButtonHeight + buttonSpacing;
+          legendPanel.style.top = `${legendPanelTop}px`;
+          legendPanel.style.maxHeight = 'none';
+          legendPanel.style.overflowY = 'visible';
+          
+          // Get the actual height of the legend panel after it expands
+          // Use requestAnimationFrame to ensure DOM is updated
+          requestAnimationFrame(() => {
+            const legendPanelHeight = legendPanel.offsetHeight || legendPanel.scrollHeight;
+            downloadButtonTop = legendPanelTop + legendPanelHeight + buttonSpacing;
+            downloadButton.style.top = `${downloadButtonTop}px`;
+          });
+        } else {
+          // Legend panel is hidden - position download button below legend button
+          downloadButtonTop = legendButtonTop + buttonHeight + buttonSpacing;
+          downloadButton.style.top = `${downloadButtonTop}px`;
+        }
       }
     } else {
       // Filter pane is hidden - position buttons below Filter toggle button
       legendButtonTop = filterButtonTop + filterButtonHeight + buttonSpacing;
-      downloadButtonTop = legendButtonTop + buttonHeight + buttonSpacing;
-      
       legendButton.style.top = `${legendButtonTop}px`;
-      downloadButton.style.top = `${downloadButtonTop}px`;
       
-      // Position legend panel between Filter button and Download button
-      legendPanelTop = filterButtonTop + filterButtonHeight + buttonSpacing;
-      legendPanelMaxHeight = downloadButtonTop - legendPanelTop - buttonSpacing;
-    }
-    
-    // Update legend panel position
-    if (legendPanel && legendPanelTop && legendPanelMaxHeight) {
-      legendPanel.style.top = `${legendPanelTop}px`;
-      legendPanel.style.maxHeight = `${Math.max(200, legendPanelMaxHeight)}px`; // Minimum 200px height
+      if (isLegendShown) {
+        // Legend panel is shown - position download button below legend panel
+        // First, ensure legend panel can expand to full height
+        legendPanelTop = filterButtonTop + filterButtonHeight + buttonSpacing;
+        legendPanel.style.top = `${legendPanelTop}px`;
+        legendPanel.style.maxHeight = 'none';
+        legendPanel.style.overflowY = 'visible';
+        
+        // Get the actual height of the legend panel after it expands
+        // Use requestAnimationFrame to ensure DOM is updated
+        requestAnimationFrame(() => {
+          const legendPanelHeight = legendPanel.offsetHeight || legendPanel.scrollHeight;
+          downloadButtonTop = legendPanelTop + legendPanelHeight + buttonSpacing;
+          downloadButton.style.top = `${downloadButtonTop}px`;
+        });
+      } else {
+        // Legend panel is hidden - position download button below legend button
+        downloadButtonTop = legendButtonTop + buttonHeight + buttonSpacing;
+        downloadButton.style.top = `${downloadButtonTop}px`;
+      }
     }
   }
 
@@ -2974,7 +2999,9 @@ async function loadFMAMunicipalitiesMap() {
         legendPanel.classList.add('show');
         toggleLegendButton.style.display = 'none';
         // Update positions again after legend is shown to ensure proper positioning
-        updateFMAButtonPositions();
+        setTimeout(() => {
+          updateFMAButtonPositions();
+        }, 350); // Wait for animation to complete
       }, 50);
     });
   }
@@ -2982,7 +3009,11 @@ async function loadFMAMunicipalitiesMap() {
   if (closeLegendButton && legendPanel && toggleLegendButton) {
     closeLegendButton.addEventListener('click', () => {
       legendPanel.classList.remove('show');
+      legendPanel.style.maxHeight = '';
+      legendPanel.style.overflowY = '';
       toggleLegendButton.style.display = 'flex';
+      // Update positions after legend is hidden
+      updateFMAButtonPositions();
     });
   }
   

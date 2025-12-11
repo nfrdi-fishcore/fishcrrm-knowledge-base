@@ -2399,9 +2399,14 @@ async function loadLandingCenters() {
         regions.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
     }
 
+    if (provinceSelect) {
+      provinceSelect.innerHTML = '<option value="">All Provinces (select FMA or Region first)</option>';
+      provinceSelect.disabled = true;
+    }
+
     if (fishingGroundSelect) {
-      fishingGroundSelect.innerHTML = '<option value="">All Fishing Grounds</option>' + 
-        fishingGrounds.map(fg => `<option value="${escapeHtml(fg)}">${escapeHtml(fg)}</option>`).join('');
+      fishingGroundSelect.innerHTML = '<option value="">All Fishing Grounds (select FMA or Region first)</option>';
+      fishingGroundSelect.disabled = true;
     }
 
     // Function to update region filter based on selected FMA (for landing centers)
@@ -2435,11 +2440,6 @@ async function loadLandingCenters() {
           regionSelect.value = selectedRegion;
         } else {
           regionSelect.value = '';
-          // Clear province filter if region is cleared
-          if (provinceSelect) {
-            provinceSelect.innerHTML = '<option value="">All Provinces (select region first)</option>';
-            provinceSelect.disabled = true;
-          }
         }
       }
     }
@@ -2479,41 +2479,122 @@ async function loadLandingCenters() {
       }
     }
 
-    // Handle FMA change to update region filter
+    // Function to update province filter based on selected FMA and Region (for landing centers)
+    function updateLandingCentersProvinceFilter() {
+      const selectedFMA = fmaSelect?.value || '';
+      const selectedRegion = regionSelect?.value || '';
+      const selectedProvince = provinceSelect?.value || '';
+      
+      if (!provinceSelect) return;
+      
+      // Filter data based on selected FMA and Region
+      let filteredData = validData;
+      if (selectedFMA) {
+        filteredData = filteredData.filter(r => r.FMA === selectedFMA);
+      }
+      if (selectedRegion) {
+        filteredData = filteredData.filter(r => r.REGION === selectedRegion);
+      }
+      
+      // Get unique provinces from filtered data
+      const availableProvinces = [...new Set(
+        filteredData
+          .map(r => r.PROVINCE)
+          .filter(Boolean)
+      )].sort();
+      
+      // Update province dropdown
+      provinceSelect.innerHTML = '<option value="">All Provinces</option>';
+      
+      // Enable province filter only if at least one filter (FMA or Region) is selected
+      const shouldEnable = selectedFMA || selectedRegion;
+      provinceSelect.disabled = !shouldEnable;
+      
+      if (shouldEnable && availableProvinces.length > 0) {
+        availableProvinces.forEach(prov => {
+          const opt = document.createElement('option');
+          opt.value = prov;
+          opt.textContent = prov;
+          provinceSelect.appendChild(opt);
+        });
+        
+        // Restore selection if it's still valid
+        if (selectedProvince && availableProvinces.includes(selectedProvince)) {
+          provinceSelect.value = selectedProvince;
+        } else {
+          provinceSelect.value = '';
+        }
+      } else if (!shouldEnable) {
+        provinceSelect.innerHTML = '<option value="">All Provinces (select FMA or Region first)</option>';
+      }
+    }
+
+    // Function to update fishing grounds filter based on selected FMA and Region (for landing centers)
+    function updateLandingCentersFishingGroundsFilter() {
+      const selectedFMA = fmaSelect?.value || '';
+      const selectedRegion = regionSelect?.value || '';
+      const selectedFishingGround = fishingGroundSelect?.value || '';
+      
+      if (!fishingGroundSelect) return;
+      
+      // Filter data based on selected FMA and Region
+      let filteredData = validData;
+      if (selectedFMA) {
+        filteredData = filteredData.filter(r => r.FMA === selectedFMA);
+      }
+      if (selectedRegion) {
+        filteredData = filteredData.filter(r => r.REGION === selectedRegion);
+      }
+      
+      // Get unique fishing grounds from filtered data
+      const availableFishingGrounds = [...new Set(
+        filteredData
+          .map(r => r.FISHING_GROUND)
+          .filter(Boolean)
+      )].sort();
+      
+      // Update fishing grounds dropdown
+      fishingGroundSelect.innerHTML = '<option value="">All Fishing Grounds</option>';
+      
+      // Enable fishing grounds filter only if at least one filter (FMA or Region) is selected
+      const shouldEnable = selectedFMA || selectedRegion;
+      fishingGroundSelect.disabled = !shouldEnable;
+      
+      if (shouldEnable && availableFishingGrounds.length > 0) {
+        availableFishingGrounds.forEach(fg => {
+          const opt = document.createElement('option');
+          opt.value = fg;
+          opt.textContent = fg;
+          fishingGroundSelect.appendChild(opt);
+        });
+        
+        // Restore selection if it's still valid
+        if (selectedFishingGround && availableFishingGrounds.includes(selectedFishingGround)) {
+          fishingGroundSelect.value = selectedFishingGround;
+        } else {
+          fishingGroundSelect.value = '';
+        }
+      } else if (!shouldEnable) {
+        fishingGroundSelect.innerHTML = '<option value="">All Fishing Grounds (select FMA or Region first)</option>';
+      }
+    }
+
+    // Handle FMA change to update region, province, and fishing grounds filters
     if (fmaSelect) {
       fmaSelect.addEventListener('change', () => {
         updateLandingCentersRegionFilter();
+        updateLandingCentersProvinceFilter();
+        updateLandingCentersFishingGroundsFilter();
         filterLandingCentersMarkers();
       });
     }
 
-    // Handle region change to populate provinces and update FMA filter
-    if (regionSelect && provinceSelect) {
+    // Handle region change to update FMA, province, and fishing grounds filters
+    if (regionSelect) {
       regionSelect.addEventListener('change', () => {
-        const selectedRegion = regionSelect.value;
-        
-        // Update FMA filter based on selected region
         updateLandingCentersFMAFilter();
-        
-        provinceSelect.innerHTML = '<option value="">All Provinces</option>';
-        provinceSelect.disabled = !selectedRegion;
-
-        if (selectedRegion) {
-          const provinces = [...new Set(
-            validData
-              .filter(r => r.REGION === selectedRegion)
-              .map(r => r.PROVINCE)
-              .filter(Boolean)
-          )].sort();
-          
-          provinces.forEach(prov => {
-            const opt = document.createElement('option');
-            opt.value = prov;
-            opt.textContent = prov;
-            provinceSelect.appendChild(opt);
-          });
-        }
-
+        updateLandingCentersProvinceFilter();
+        updateLandingCentersFishingGroundsFilter();
         filterLandingCentersMarkers();
       });
     }
@@ -2538,16 +2619,21 @@ async function loadLandingCenters() {
           if (el) {
             el.value = '';
             if (el.tagName === 'SELECT') {
-              el.disabled = filterId === 'filter-province';
+              el.disabled = filterId === 'filter-province' || filterId === 'filter-fishing-ground';
             }
           }
         });
         if (provinceSelect) {
-          provinceSelect.innerHTML = '<option value="">All Provinces (select region first)</option>';
+          provinceSelect.innerHTML = '<option value="">All Provinces (select FMA or Region first)</option>';
         }
-        // Reset both filters to show all options
+        if (fishingGroundSelect) {
+          fishingGroundSelect.innerHTML = '<option value="">All Fishing Grounds (select FMA or Region first)</option>';
+        }
+        // Reset all filters to show all options
         updateLandingCentersRegionFilter();
         updateLandingCentersFMAFilter();
+        updateLandingCentersProvinceFilter();
+        updateLandingCentersFishingGroundsFilter();
         filterLandingCentersMarkers();
       });
     }

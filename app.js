@@ -697,7 +697,7 @@ async function loadFMAMunicipalities() {
             <i class="bi bi-building me-1"></i>Filter by Province
           </label>
           <select id="filter-province" class="form-select shadow-sm" disabled>
-            <option value="">All Provinces (select region first)</option>
+            <option value="">All Provinces (select FMA or Region first)</option>
           </select>
         </div>
       </div>
@@ -752,11 +752,6 @@ async function loadFMAMunicipalities() {
           regionSelect.value = selectedRegion;
         } else {
           regionSelect.value = '';
-          // Clear province filter if region is cleared
-          if (provinceSelect) {
-            provinceSelect.innerHTML = '<option value="">All Provinces (select region first)</option>';
-            provinceSelect.disabled = true;
-          }
         }
       }
     }
@@ -797,6 +792,56 @@ async function loadFMAMunicipalities() {
       }
     }
 
+    // Function to update province filter based on selected FMA and Region
+    function updateProvinceFilter() {
+      const selectedFMA = fmaSelect?.value || '';
+      const selectedRegion = regionSelect?.value || '';
+      const selectedProvince = provinceSelect?.value || '';
+      
+      if (!provinceSelect) return;
+      
+      // Filter data based on selected FMA and Region
+      let filteredData = data;
+      if (selectedFMA) {
+        filteredData = filteredData.filter(r => r.FMA === selectedFMA);
+      }
+      if (selectedRegion) {
+        filteredData = filteredData.filter(r => r.REGION === selectedRegion);
+      }
+      
+      // Get unique provinces from filtered data
+      const availableProvinces = [...new Set(
+        filteredData
+          .map(r => r.PROVINCE)
+          .filter(Boolean)
+      )].sort();
+      
+      // Update province dropdown
+      provinceSelect.innerHTML = '<option value="">All Provinces</option>';
+      
+      // Enable province filter only if at least one filter (FMA or Region) is selected
+      const shouldEnable = selectedFMA || selectedRegion;
+      provinceSelect.disabled = !shouldEnable;
+      
+      if (shouldEnable && availableProvinces.length > 0) {
+        availableProvinces.forEach(prov => {
+          const opt = document.createElement('option');
+          opt.value = prov;
+          opt.textContent = prov;
+          provinceSelect.appendChild(opt);
+        });
+        
+        // Restore selection if it's still valid
+        if (selectedProvince && availableProvinces.includes(selectedProvince)) {
+          provinceSelect.value = selectedProvince;
+        } else {
+          provinceSelect.value = '';
+        }
+      } else if (!shouldEnable) {
+        provinceSelect.innerHTML = '<option value="">All Provinces (select FMA or Region first)</option>';
+      }
+    }
+
     // Populate provinces when region changes
     if (regionSelect) {
       regionSelect.addEventListener('change', () => {
@@ -805,19 +850,9 @@ async function loadFMAMunicipalities() {
         // Update FMA filter based on selected region
         updateFMAFilter();
         
-        if (provinceSelect) {
-          provinceSelect.innerHTML = '<option value="">All Provinces</option>';
-          provinceSelect.disabled = !selectedRegion;
-
-          if (selectedRegion && provincesByRegion[selectedRegion]) {
-            provincesByRegion[selectedRegion].forEach(prov => {
-              const opt = document.createElement('option');
-              opt.value = prov;
-              opt.textContent = prov;
-              provinceSelect.appendChild(opt);
-            });
-          }
-        }
+        // Update province filter based on both FMA and Region
+        updateProvinceFilter();
+        
         currentPage = 1; // Reset to first page on filter change
         renderTable();
       });
@@ -834,6 +869,8 @@ async function loadFMAMunicipalities() {
       fmaSelect.addEventListener('change', () => {
         // Update region filter based on selected FMA
         updateRegionFilter();
+        // Update province filter based on both FMA and Region
+        updateProvinceFilter();
         currentPage = 1; // Reset to first page on filter change
         renderTable();
       });

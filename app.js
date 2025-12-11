@@ -2300,12 +2300,12 @@ async function loadLandingCenters() {
     return;
   }
 
-  // Initialize filter sidebar - show by default
+  // Initialize filter sidebar - hidden by default
   if (filterSidebar) {
-    filterSidebar.classList.add('show');
+    filterSidebar.classList.remove('show');
   }
   if (toggleButton) {
-    toggleButton.style.display = 'none';
+    toggleButton.style.display = 'flex';
   }
 
   // Set up filter sidebar toggle functionality

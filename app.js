@@ -2686,8 +2686,8 @@ async function loadLandingCenters() {
       })
     };
 
-    // Add default tile layer (OpenStreetMap)
-    window.currentTileLayer = baseMaps['OpenStreetMap'];
+    // Add default tile layer (Esri World Street Map)
+    window.currentTileLayer = baseMaps['Esri World Street Map'];
     window.currentTileLayer.addTo(window.landingCentersMap);
     window.baseMaps = baseMaps; // Store for base map selector
 

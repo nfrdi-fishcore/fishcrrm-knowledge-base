@@ -4086,8 +4086,8 @@ async function loadFMAMunicipalitiesMap() {
       })
     };
 
-    // Add default tile layer (OpenStreetMap)
-    window.fmaCurrentTileLayer = baseMaps['OpenStreetMap'];
+    // Add default tile layer (Esri World Street Map)
+    window.fmaCurrentTileLayer = baseMaps['Esri World Street Map'];
     window.fmaCurrentTileLayer.addTo(window.fmaMunicipalitiesMap);
     window.fmaBaseMaps = baseMaps; // Store for base map selector
 

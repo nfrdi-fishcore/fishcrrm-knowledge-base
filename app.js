@@ -137,6 +137,13 @@ async function navigate(hash) {
 window.addEventListener('popstate', e => navigate(location.hash));
 
 document.addEventListener('click', e => {
+  // Exclude Leaflet popup close buttons and other Leaflet popup elements
+  const isLeafletPopup = e.target.closest('.leaflet-popup') || 
+                         e.target.classList.contains('leaflet-popup-close-button') ||
+                         e.target.closest('.leaflet-popup-close-button');
+  if (isLeafletPopup) {
+    return; // Don't handle navigation for clicks inside Leaflet popups
+  }
   if (e.target.matches('a[href^="#"]') && !e.target.getAttribute('target')) {
     e.preventDefault();
     navigate(e.target.getAttribute('href'));

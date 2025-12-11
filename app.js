@@ -2971,21 +2971,16 @@ async function downloadLandingCentersMapScreenshot() {
     // Load html2canvas library
     await loadHtml2Canvas();
     
-    const mapWrapper = document.querySelector('.landing-centers-map-wrapper');
-    if (!mapWrapper) {
-      showToast('Map wrapper not found', 'error');
-      return;
-    }
-
+    // Only capture the map container, excluding UI elements (filter pane, legend, buttons, info panel)
     showToast('Capturing screenshot...', 'info');
     
-    const canvas = await html2canvas(mapWrapper, {
+    const canvas = await html2canvas(mapContainer, {
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
       scale: 1,
-      width: mapWrapper.offsetWidth,
-      height: mapWrapper.offsetHeight
+      width: mapContainer.offsetWidth,
+      height: mapContainer.offsetHeight
     });
 
     // Convert canvas to blob and download
